@@ -10,6 +10,25 @@ export type StatusTag =
   | "异常"
   | "DoT";
 
+  /**
+ * 同种状态再次添加时的处理方式。
+ *
+ * replace：
+ * 不可叠加。删除所有同definitionId的旧实例，
+ * 然后创建新实例。新状态无视旧状态的强度和持续时间。
+ *
+ * independent：
+ * 可叠加。完全忽略已有状态，直接创建新的独立实例。
+ *
+ * layers：
+ * 层数增加。存在同definitionId状态时只增加层数，
+ * 不修改原状态的持续时间、数值、说明、钩子和额外数据。
+ */
+export type StatusStacking =
+  | "replace"
+  | "independent"
+  | "layers";
+
 export type StatusModifiableStat =
   | "attack"
   | "defense"
@@ -93,8 +112,11 @@ export interface AddStatusInput {
   tag: StatusTag;
 
   /**
-   * 默认replace：
-   * 新状态完全覆盖旧状态。
+   * 状态叠加方式，默认为replace。
+   *
+   * replace：完全覆盖同definitionId的旧状态。
+   * independent：创建新的独立状态实例。
+   * layers：只增加同definitionId状态的层数。
    */
   stacking?: StatusStacking;
 
@@ -102,11 +124,17 @@ export interface AddStatusInput {
   stacks?: number;
 
   fixedModifiers?: Partial<
-    Record<StatusModifiableStat, number>
+    Record<
+      StatusModifiableStat,
+      number
+    >
   >;
 
   percentModifiers?: Partial<
-    Record<StatusModifiableStat, number>
+    Record<
+      StatusModifiableStat,
+      number
+    >
   >;
 
   hookIds?: string[];
@@ -135,52 +163,9 @@ export function addStatus(
     return undefined;
   }
 
-  const stacking =
-    input.stacking ?? "replace";
-
-  const existingStatuses =
-    target.statuses.filter(
-      (status) =>
-        status.definitionId ===
-        input.definitionId,
-    );
-
-  /*
-   * 层数型状态：
-   * 使用同一个状态实例，只增加层数。
-   */
-  if (
-    stacking === "layers" &&
-    existingStatuses.length > 0
-  ) {
-    const existing =
-      existingStatuses[0];
-
-    existing.stacks += Math.max(
-      1,
-      Math.floor(input.stacks ?? 1),
-    );
-
-    return existing;
-  }
-
-  /*
-   * 默认规则：
-   * 新状态完全覆盖旧状态。
-   *
-   * 数值更低、持续时间更短也照常覆盖。
-   */
-  if (stacking === "replace") {
-    target.statuses =
-      target.statuses.filter(
-        (status) =>
-          status.definitionId !==
-          input.definitionId,
-      );
-  }
-
   const status: BattleStatusEffect = {
-    id: `status-${state.nextStatusId}`,
+    id:
+      `status-${state.nextStatusId}`,
 
     definitionId:
       input.definitionId,
@@ -190,12 +175,16 @@ export function addStatus(
     description: input.description,
     tag: input.tag,
 
-    duration: input.duration ?? -1,
+    duration:
+      input.duration ?? -1,
 
-    stacks: Math.max(
-      1,
-      Math.floor(input.stacks ?? 1),
-    ),
+    stacks:
+      Math.max(
+        1,
+        Math.floor(
+          input.stacks ?? 1,
+        ),
+      ),
 
     fixedModifiers: {
       ...(input.fixedModifiers ?? {}),
@@ -214,7 +203,44 @@ export function addStatus(
     },
   };
 
+  const stacking = input.stacking ?? "replace";
+  const matchingStatuses = target.statuses.filter(
+    (existingStatus) =>
+      existingStatus.definitionId ===
+      input.definitionId,
+  );
+
+  if (stacking === "layers") {
+    const existingStatus = matchingStatuses[0];
+
+    if (existingStatus) {
+      existingStatus.stacks += status.stacks;
+
+      for (const duplicate of matchingStatuses.slice(1)) {
+        existingStatus.stacks += duplicate.stacks;
+      }
+
+      target.statuses = target.statuses.filter(
+        (candidate) =>
+          candidate.definitionId !==
+            input.definitionId ||
+          candidate.id === existingStatus.id,
+      );
+
+      return existingStatus;
+    }
+  }
+
+  if (stacking === "replace") {
+    target.statuses = target.statuses.filter(
+      (existingStatus) =>
+        existingStatus.definitionId !==
+        input.definitionId,
+    );
+  }
+
   state.nextStatusId += 1;
+
   target.statuses.push(status);
 
   return status;
@@ -296,33 +322,19 @@ export function addImbalance(
   targetId: string,
   layers = 1,
 ): void {
-  const target = state.units.find(
-    (unit) => unit.id === targetId,
-  );
-
-  if (!target || layers <= 0) {
-    return;
-  }
-
-  const existing =
-    getStatusByDefinition(
-      target,
-      "imbalance",
-    );
-
-  if (existing) {
-    existing.stacks += layers;
+  if (layers <= 0) {
     return;
   }
 
   addStatus(
     state,
-    target.id,
+    targetId,
     {
       definitionId: "imbalance",
       name: "失衡",
       icon: "失",
       tag: "异常",
+      stacking: "layers",
       duration: -1,
       stacks: layers,
 

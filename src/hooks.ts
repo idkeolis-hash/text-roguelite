@@ -420,54 +420,28 @@ export const BATTLE_HOOKS: Record<
           "speed",
         );
 
-      const baseSpeed = Math.max(
+      /*
+       * 状态只修正实际属性，不直接修改BattleUnit.speed，
+       * 因此这里的speed就是战斗开始时记录的速度。
+       */
+      const battleStartSpeed = Math.max(
         1,
         context.owner.speed,
       );
 
-      const ratio =
-        currentSpeed / baseSpeed;
-
       /*
-       * 按需求：104%不触发，105%开始触发。
+       * 公式：
+       * 四舍五入（(当前速度 / 战斗开始时速度) × 10%)
        */
-      if (ratio < 1.05) {
-        context.log(
-          `${context.owner.name}当前速度不足以令乘风产生新的强化。`,
-        );
+      const roundedRatio = Math.round(
+        (currentSpeed / battleStartSpeed) * 10,
+      );
 
-        return;
-      }
-
-      /*
-       * 236%速度会得到24%。
-       *
-       * 对正好处于x.5的数值使用偶数舍入，
-       * 因而105%会得到10%。
-       */
-      const rawValue = ratio * 10;
-      const lower = Math.floor(rawValue);
-      const fraction =
-        rawValue - lower;
-
-      let roundedValue: number;
-
-      if (
-        Math.abs(
-          fraction - 0.5,
-        ) < 0.000001
-      ) {
-        roundedValue =
-          lower % 2 === 0
-            ? lower
-            : lower + 1;
-      } else {
-        roundedValue =
-          Math.round(rawValue);
-      }
+      const roundedValue =
+        roundedRatio;
 
       const bonusPercent =
-        roundedValue / 100;
+        roundedRatio * 0.01;
 
       if (bonusPercent <= 0) {
         return;
@@ -483,6 +457,7 @@ export const BATTLE_HOOKS: Record<
           name: "乘风·速度",
           icon: "速",
           tag: "正面",
+          stacking: "independent",
           duration: 3,
 
           description:
@@ -504,6 +479,7 @@ export const BATTLE_HOOKS: Record<
           name: "乘风·攻击",
           icon: "攻",
           tag: "正面",
+          stacking: "independent",
           duration: 3,
 
           description:

@@ -2043,6 +2043,7 @@ function performRainbowWeaponAction(
           name: "双重彩虹·加速",
           icon: "速",
           tag: "正面",
+          stacking: "independent",
           duration: 3,
 
           description:
@@ -2148,6 +2149,7 @@ function performRainbowWeaponAction(
         name: "乘风",
         icon: "乘",
         tag: "特殊",
+        stacking: "replace",
         duration: 3,
 
         description:
@@ -2209,6 +2211,7 @@ function performRainbowWeaponAction(
           name: buff.name,
           icon: buff.icon,
           tag: "正面",
+          stacking: "replace",
           duration: 3,
 
           description:
