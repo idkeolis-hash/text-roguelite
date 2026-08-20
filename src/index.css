@@ -1,0 +1,3655 @@
+:root {
+  color: #e7e4dc;
+  background: #0d0f14;
+  font-family:
+    Inter, "Noto Sans SC", "Microsoft YaHei",
+    system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at top,
+      #252235 0,
+      #11131a 42%,
+      #090a0e 100%
+    );
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid #c7a969;
+  outline-offset: 3px;
+}
+
+.screen {
+  width: min(1180px, calc(100% - 32px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 48px 0;
+  display: flex;
+  align-items: center;
+}
+
+.story-screen {
+  justify-content: center;
+}
+
+.panel {
+  border: 1px solid #3b3a43;
+  border-radius: 12px;
+  background: rgba(21, 23, 31, 0.96);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.35);
+}
+
+.story-panel {
+  width: min(780px, 100%);
+  padding: 34px;
+}
+
+.story-header,
+.section-heading,
+.battle-header,
+.unit-title,
+.health-row,
+.resource-row,
+.button-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 14px;
+  font-size: clamp(28px, 5vw, 42px);
+}
+
+h2 {
+  font-size: 20px;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  color: #c7a969;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.page-indicator,
+.muted-text {
+  color: #9898a4;
+}
+
+.story-text,
+.fairy-text {
+  min-height: 220px;
+  padding: 26px 0;
+  color: #d8d5cd;
+  font-size: 17px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.button-row {
+  margin-top: 24px;
+}
+
+.button-row.right {
+  justify-content: flex-end;
+}
+
+.primary-button,
+.secondary-button,
+.choice-button,
+.action-button {
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.primary-button {
+  min-width: 130px;
+  padding: 12px 20px;
+  border: 1px solid #d1b778;
+  background: #9e803f;
+  color: #fff;
+  font-weight: 700;
+}
+
+.primary-button:hover {
+  background: #b2914a;
+  transform: translateY(-1px);
+}
+
+.secondary-button {
+  padding: 10px 16px;
+  border: 1px solid #55545e;
+  background: #242630;
+}
+
+.secondary-button:hover {
+  border-color: #c7a969;
+}
+
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 26px;
+}
+
+.character-card {
+  position: relative;
+  min-height: 360px;
+  padding: 24px;
+  border: 1px solid #464650;
+  border-radius: 10px;
+  background: #1b1d25;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.character-card:hover,
+.character-card.selected {
+  border-color: #c7a969;
+  background: #22232b;
+}
+
+.character-card.selected {
+  box-shadow: inset 0 0 0 1px #c7a969;
+}
+
+.character-description {
+  color: #bebbc1;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.select-mark {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  color: #c7a969;
+  font-weight: 700;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 30px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 5px;
+  background: #12141a;
+}
+
+.stat-item span {
+  color: #9f9da5;
+}
+
+.choice-panel {
+  width: min(760px, 100%);
+  padding: 38px;
+}
+
+.choice-list {
+  display: grid;
+  gap: 14px;
+}
+
+.choice-button {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 18px;
+  border: 1px solid #474750;
+  background: #1c1e26;
+  text-align: left;
+}
+
+.choice-button:hover {
+  border-color: #c7a969;
+  background: #252630;
+}
+
+.choice-button span {
+  color: #aaa8b0;
+  font-size: 14px;
+}
+
+.battle-screen {
+  width: min(1440px, calc(100% - 28px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 0 40px;
+}
+
+.battle-header {
+  margin-bottom: 20px;
+}
+
+.battle-header h1 {
+  margin-bottom: 0;
+}
+
+.battle-objective {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.battle-objective span {
+  color: #aaa8b0;
+}
+
+.battle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 18px;
+}
+
+.battle-main {
+  display: grid;
+  gap: 18px;
+}
+
+.battlefield,
+.command-panel,
+.fairy-panel,
+.log-panel {
+  padding: 20px;
+}
+
+.team-section h2 {
+  color: #c5c2bb;
+}
+
+.unit-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.unit-card {
+  min-height: 185px;
+  padding: 16px;
+  border: 1px solid #42434d;
+  border-radius: 8px;
+  background: #191b22;
+  color: inherit;
+  text-align: left;
+}
+
+button.unit-card:not(:disabled) {
+  cursor: pointer;
+}
+
+button.unit-card:not(:disabled):hover {
+  border-color: #a88e56;
+}
+
+.unit-card.current-unit {
+  border-color: #72a8d8;
+  box-shadow: inset 0 0 0 1px #72a8d8;
+}
+
+.unit-card.selected-target {
+  border-color: #d3786d;
+  box-shadow: inset 0 0 0 1px #d3786d;
+}
+
+.unit-card.defeated {
+  opacity: 0.44;
+  filter: grayscale(1);
+}
+
+.turn-mark {
+  color: #78b8ee;
+  font-size: 12px;
+}
+
+.health-row {
+  margin: 18px 0 7px;
+  color: #aaa8b0;
+  font-size: 13px;
+}
+
+.health-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #343640;
+}
+
+.health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #a84c52, #d66c67);
+  transition: width 200ms ease;
+}
+
+.unit-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  margin-top: 16px;
+  color: #aaa8b0;
+  font-size: 12px;
+}
+
+.status-list {
+  min-height: 29px;
+  margin-top: 10px;
+}
+
+.status-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 3px 7px;
+  border: 1px solid #6885a0;
+  border-radius: 4px;
+  color: #9ec7eb;
+  font-size: 11px;
+}
+
+.status-tag.danger {
+  border-color: #9e5555;
+  color: #e08080;
+}
+
+.unit-card small {
+  color: #777984;
+}
+
+.battle-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: #b9a575;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.battle-divider::before,
+.battle-divider::after {
+  height: 1px;
+  flex: 1;
+  background: #44444d;
+  content: "";
+}
+
+.resource-row {
+  align-items: stretch;
+}
+
+.resource-row > div {
+  min-width: 110px;
+  padding: 12px;
+  border-radius: 7px;
+  background: #11131a;
+}
+
+.resource-row span,
+.resource-row strong {
+  display: block;
+}
+
+.resource-row span {
+  margin-bottom: 5px;
+  color: #92919b;
+  font-size: 12px;
+}
+
+.charge-bar {
+  display: flex;
+  gap: 7px;
+  margin: 18px 0;
+}
+
+.charge-bar span {
+  height: 9px;
+  flex: 1;
+  border-radius: 999px;
+  background: #353640;
+}
+
+.charge-bar span.charged {
+  background: #d3b65e;
+  box-shadow: 0 0 8px rgba(211, 182, 94, 0.45);
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+}
+
+.action-button {
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid #484953;
+  background: #20222b;
+  text-align: left;
+}
+
+.action-button:hover:not(:disabled) {
+  border-color: #c7a969;
+  background: #292b35;
+}
+
+.action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.action-button strong,
+.action-button span {
+  display: block;
+}
+
+.action-button span {
+  margin-top: 7px;
+  color: #aaa8b0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.waiting-message {
+  margin: 18px 0 0;
+  color: #8ab5db;
+  text-align: center;
+}
+
+.battle-sidebar {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.fairy-text {
+  min-height: 130px;
+  padding: 0;
+  font-size: 14px;
+}
+
+.log-panel {
+  min-height: 380px;
+}
+
+.battle-log {
+  height: 330px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.battle-log p {
+  margin-bottom: 11px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid #2b2c34;
+  color: #b5b3ba;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.battle-result {
+  padding: 32px 10px 12px;
+  text-align: center;
+}
+
+.battle-result p {
+  color: #aaa8b0;
+}
+
+.danger-result h2 {
+  color: #e17d7d;
+}
+
+.complete-panel {
+  text-align: center;
+}
+
+@media (max-width: 1050px) {
+  .battle-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-sidebar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .action-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 780px) {
+  .screen {
+    width: min(100% - 20px, 1180px);
+    padding: 20px 0;
+  }
+
+  .character-grid,
+  .unit-row,
+  .battle-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .story-panel,
+  .choice-panel {
+    padding: 22px;
+  }
+
+  .section-heading,
+  .battle-header,
+  .resource-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .battle-objective {
+    text-align: left;
+  }
+
+  .resource-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/*
+ * 从这里开始已经不在 @media 中。
+ * 无论桌面还是移动设备都会生效。
+ */
+
+.enemy-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.enemy-summary span {
+  padding: 8px;
+  border-radius: 5px;
+  background: #11131a;
+  color: #aaa8b0;
+  font-size: 12px;
+}
+
+.enemy-action-list {
+  display: grid;
+  gap: 9px;
+}
+
+.enemy-action-entry {
+  padding: 11px;
+  border: 1px solid #343640;
+  border-radius: 6px;
+  background: #181a21;
+}
+
+.enemy-action-entry strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #d5bd7e;
+  font-size: 13px;
+}
+
+.enemy-action-entry p {
+  margin: 0;
+  color: #aaa8b0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.fairy-comment {
+  margin: 14px 0 0;
+  padding: 11px;
+  border-left: 3px solid #c7a969;
+  background: rgba(199, 169, 105, 0.08);
+  color: #d7d2c6;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 对话容器 */
+
+.dialogue-container {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.dialogue-line {
+  padding-left: 14px;
+  border-left: 3px solid currentColor;
+}
+
+.speaker-name {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.dialogue-content {
+  color: inherit;
+  font-family: inherit;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+/* 旁白 */
+
+.speaker-narrator {
+  color: #c5c3bd;
+  font-family:
+    Georgia,
+    "Noto Serif SC",
+    "Songti SC",
+    SimSun,
+    serif;
+  font-style: italic;
+}
+
+/* 主控／勇者 */
+
+.speaker-protagonist {
+  color: #80b7e8;
+  font-family:
+    "Noto Sans SC",
+    "Microsoft YaHei",
+    sans-serif;
+  font-weight: 500;
+}
+
+/* 妖精 */
+
+.speaker-fairy {
+  color: #e8c96f;
+  font-family:
+    "Kaiti SC",
+    KaiTi,
+    "Noto Serif SC",
+    serif;
+}
+
+/* 魔将 */
+
+.speaker-mage-general {
+  color: #bd83e6;
+  font-family:
+    "FangSong",
+    "FangSong SC",
+    "Noto Serif SC",
+    serif;
+}
+
+/* 盾矛兵 */
+
+.speaker-shield-soldier {
+  color: #8fb6c9;
+  font-family:
+    "Microsoft YaHei",
+    "Noto Sans SC",
+    sans-serif;
+  font-weight: 700;
+}
+
+/* 巨镰兵 */
+
+.speaker-scythe-soldier {
+  color: #e17c79;
+  font-family:
+    Impact,
+    "Microsoft YaHei",
+    "Noto Sans SC",
+    sans-serif;
+  font-weight: 700;
+}
+
+/* 系统文字 */
+
+.speaker-system {
+  color: #83c995;
+  font-family:
+    "Cascadia Mono",
+    "Microsoft YaHei",
+    monospace;
+}
+
+/* ========================================================
+   新战斗界面
+   ======================================================== */
+
+.battle-screen {
+  position: relative;
+  isolation: isolate;
+}
+
+.battle-header,
+.combat-stage,
+.battle-bottom-layout {
+  position: relative;
+  z-index: 2;
+}
+
+/* 上方战场：敌方、敌人资料、我方 */
+
+.combat-stage {
+  display: grid;
+  grid-template-columns:
+    minmax(350px, 1.15fr)
+    minmax(270px, 0.72fr)
+    minmax(300px, 0.9fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+
+.formation-panel,
+.selected-enemy-panel {
+  min-width: 0;
+  padding: 18px;
+}
+
+.formation-heading,
+.selected-enemy-heading,
+.command-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.formation-heading h2,
+.selected-enemy-heading h2,
+.command-heading h2,
+.log-heading h2 {
+  margin-bottom: 0;
+}
+
+.formation-count {
+  min-width: 47px;
+  padding: 5px 9px;
+  border: 1px solid #444650;
+  border-radius: 999px;
+  background: #11131a;
+  color: #aaa8b0;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* A、D、S、M */
+
+.simple-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.simple-stats span {
+  min-width: 0;
+  padding: 5px 4px;
+  border-radius: 4px;
+  background: rgba(9, 10, 14, 0.56);
+  color: #9698a2;
+  font-size: 10px;
+  text-align: center;
+}
+
+.simple-stats strong {
+  margin-left: 2px;
+  color: #ddd9ce;
+  font-size: 11px;
+}
+
+/* 菱形蓄能槽 */
+
+.charge-diamonds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 8px;
+  color: #d7bc68;
+  font-family:
+    "Cascadia Mono",
+    "Noto Sans Symbols",
+    monospace;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.diamond-filled {
+  color: #e1c35e;
+  text-shadow:
+    0 0 7px rgba(225, 195, 94, 0.65);
+}
+
+.diamond-empty {
+  color: #676873;
+}
+
+/* 单位内部通用内容 */
+
+.unit-readout {
+  width: 100%;
+}
+
+.compact-unit-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.compact-unit-title strong {
+  overflow: hidden;
+  color: #eeeae0;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-health-text {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  color: #aaa8b0;
+  font-size: 10px;
+}
+
+.compact-health-bar {
+  height: 6px;
+  margin-bottom: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(8, 9, 13, 0.74);
+}
+
+.compact-health-fill {
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      #9e454d,
+      #dc726c
+    );
+  transition: width 180ms ease;
+}
+
+.compact-turn-mark {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 3px 7px;
+  border: 1px solid #6598c4;
+  border-radius: 999px;
+  background: rgba(54, 107, 151, 0.25);
+  color: #9fd0fa;
+  font-size: 9px;
+}
+
+.compact-defeated-mark {
+  color: #dc7777;
+  font-size: 9px;
+}
+
+.compact-status-tag {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 2px 6px;
+  border: 1px solid #6885a0;
+  border-radius: 4px;
+  color: #a3c9eb;
+  font-size: 9px;
+}
+
+/* ========================================================
+   敌方正方形阵列
+   ======================================================== */
+
+.enemy-side-panel {
+  display: flex;
+  min-height: 500px;
+  flex-direction: column;
+}
+
+.enemy-formation {
+  position: relative;
+  width: min(100%, 440px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  margin: auto;
+  border: 1px solid #494a55;
+  border-radius: 10px;
+  background:
+    radial-gradient(
+      circle at center,
+      #262936 0,
+      #12141a 76%
+    );
+  box-shadow:
+    inset 0 0 45px rgba(0, 0, 0, 0.55),
+    0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.enemy-piece {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(55, 58, 73, 0.92),
+      rgba(24, 26, 34, 0.96)
+    );
+  color: inherit;
+  cursor: pointer;
+  transition:
+    filter 160ms ease,
+    background 160ms ease;
+}
+
+.enemy-piece:hover:not(:disabled) {
+  filter: brightness(1.13);
+}
+
+.enemy-piece.selected-piece {
+  z-index: 2;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(102, 72, 76, 0.98),
+      rgba(43, 31, 39, 0.98)
+    );
+  filter:
+    brightness(1.2)
+    drop-shadow(
+      0 0 11px rgba(221, 111, 102, 0.38)
+    );
+}
+
+.enemy-piece.current-piece {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(48, 90, 122, 0.98),
+      rgba(28, 39, 54, 0.98)
+    );
+}
+
+.enemy-piece.current-piece.selected-piece {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(100, 75, 111, 0.98),
+      rgba(46, 38, 61, 0.98)
+    );
+}
+
+.enemy-piece.defeated-piece {
+  cursor: default;
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+
+.enemy-piece-content {
+  position: absolute;
+  width: 145px;
+  padding: 9px;
+  border-radius: 7px;
+  background: rgba(9, 10, 15, 0.32);
+  transition:
+    transform 170ms ease,
+    background 170ms ease;
+}
+
+.enemy-piece.selected-piece
+  .enemy-piece-content {
+  background: rgba(18, 11, 15, 0.52);
+  transform: scale(1.055);
+}
+
+/* 一名敌人：占满 */
+
+.enemy-count-1 .enemy-slot-1 {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%
+  );
+}
+
+.enemy-count-1
+  .enemy-slot-1
+  .enemy-piece-content {
+  top: 50%;
+  left: 50%;
+  width: min(250px, 76%);
+  transform: translate(-50%, -50%);
+}
+
+.enemy-count-1
+  .enemy-slot-1.selected-piece
+  .enemy-piece-content {
+  transform:
+    translate(-50%, -50%)
+    scale(1.055);
+}
+
+/* 两名敌人：上下均分 */
+
+.enemy-count-2 .enemy-slot-1 {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 49.5%,
+    0 49.5%
+  );
+}
+
+.enemy-count-2 .enemy-slot-2 {
+  clip-path: polygon(
+    0 50.5%,
+    100% 50.5%,
+    100% 100%,
+    0 100%
+  );
+}
+
+.enemy-count-2
+  .enemy-slot-1
+  .enemy-piece-content,
+.enemy-count-2
+  .enemy-slot-2
+  .enemy-piece-content {
+  left: 50%;
+  width: min(230px, 70%);
+  transform: translate(-50%, -50%);
+}
+
+.enemy-count-2
+  .enemy-slot-1
+  .enemy-piece-content {
+  top: 25%;
+}
+
+.enemy-count-2
+  .enemy-slot-2
+  .enemy-piece-content {
+  top: 75%;
+}
+
+.enemy-count-2
+  .enemy-piece.selected-piece
+  .enemy-piece-content {
+  transform:
+    translate(-50%, -50%)
+    scale(1.055);
+}
+
+/* 三名敌人：两条斜线 */
+
+.enemy-count-3 .enemy-slot-1 {
+  clip-path: polygon(
+    0 0,
+    66.7% 0,
+    0 66.7%
+  );
+}
+
+.enemy-count-3 .enemy-slot-2 {
+  clip-path: polygon(
+    66.7% 0,
+    100% 0,
+    100% 33.3%,
+    33.3% 100%,
+    0 100%,
+    0 66.7%
+  );
+}
+
+.enemy-count-3 .enemy-slot-3 {
+  clip-path: polygon(
+    100% 33.3%,
+    100% 100%,
+    33.3% 100%
+  );
+}
+
+.enemy-count-3
+  .enemy-slot-1
+  .enemy-piece-content {
+  top: 10%;
+  left: 8%;
+}
+
+.enemy-count-3
+  .enemy-slot-2
+  .enemy-piece-content {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.enemy-count-3
+  .enemy-slot-2.selected-piece
+  .enemy-piece-content {
+  transform:
+    translate(-50%, -50%)
+    scale(1.055);
+}
+
+.enemy-count-3
+  .enemy-slot-3
+  .enemy-piece-content {
+  right: 8%;
+  bottom: 10%;
+}
+
+/* 四名敌人：X形分割 */
+
+.enemy-count-4 .enemy-slot-1 {
+  clip-path: polygon(
+    0 0,
+    50% 50%,
+    0 100%
+  );
+}
+
+.enemy-count-4 .enemy-slot-2 {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    50% 50%
+  );
+}
+
+.enemy-count-4 .enemy-slot-3 {
+  clip-path: polygon(
+    100% 0,
+    100% 100%,
+    50% 50%
+  );
+}
+
+.enemy-count-4 .enemy-slot-4 {
+  clip-path: polygon(
+    0 100%,
+    50% 50%,
+    100% 100%
+  );
+}
+
+.enemy-count-4
+  .enemy-slot-1
+  .enemy-piece-content {
+  top: 50%;
+  left: 4%;
+  transform: translateY(-50%);
+}
+
+.enemy-count-4
+  .enemy-slot-2
+  .enemy-piece-content {
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.enemy-count-4
+  .enemy-slot-3
+  .enemy-piece-content {
+  top: 50%;
+  right: 4%;
+  transform: translateY(-50%);
+}
+
+.enemy-count-4
+  .enemy-slot-4
+  .enemy-piece-content {
+  bottom: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.enemy-count-4
+  .enemy-slot-1.selected-piece
+  .enemy-piece-content,
+.enemy-count-4
+  .enemy-slot-3.selected-piece
+  .enemy-piece-content {
+  transform:
+    translateY(-50%)
+    scale(1.055);
+}
+
+.enemy-count-4
+  .enemy-slot-2.selected-piece
+  .enemy-piece-content,
+.enemy-count-4
+  .enemy-slot-4.selected-piece
+  .enemy-piece-content {
+  transform:
+    translateX(-50%)
+    scale(1.055);
+}
+
+/* 五名敌人：中央菱形 */
+
+.enemy-count-5 .enemy-slot-1 {
+  clip-path: polygon(
+    0 0,
+    50% 0,
+    0 50%
+  );
+}
+
+.enemy-count-5 .enemy-slot-2 {
+  clip-path: polygon(
+    50% 0,
+    100% 0,
+    100% 50%
+  );
+}
+
+.enemy-count-5 .enemy-slot-3 {
+  clip-path: polygon(
+    50% 0,
+    100% 50%,
+    50% 100%,
+    0 50%
+  );
+}
+
+.enemy-count-5 .enemy-slot-4 {
+  clip-path: polygon(
+    0 50%,
+    50% 100%,
+    0 100%
+  );
+}
+
+.enemy-count-5 .enemy-slot-5 {
+  clip-path: polygon(
+    100% 50%,
+    100% 100%,
+    50% 100%
+  );
+}
+
+.enemy-count-5
+  .enemy-slot-1
+  .enemy-piece-content {
+  top: 4%;
+  left: 3%;
+}
+
+.enemy-count-5
+  .enemy-slot-2
+  .enemy-piece-content {
+  top: 4%;
+  right: 3%;
+}
+
+.enemy-count-5
+  .enemy-slot-3
+  .enemy-piece-content {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.enemy-count-5
+  .enemy-slot-4
+  .enemy-piece-content {
+  bottom: 4%;
+  left: 3%;
+}
+
+.enemy-count-5
+  .enemy-slot-5
+  .enemy-piece-content {
+  right: 3%;
+  bottom: 4%;
+}
+
+.enemy-count-5
+  .enemy-slot-3.selected-piece
+  .enemy-piece-content {
+  transform:
+    translate(-50%, -50%)
+    scale(1.055);
+}
+
+/* ========================================================
+   我方阵列
+   ======================================================== */
+
+.player-side-panel {
+  min-height: 500px;
+}
+
+.player-formation {
+  display: flex;
+  min-height: 420px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.player-main-unit,
+.companion-unit {
+  position: relative;
+  border: 1px solid #444750;
+  border-radius: 9px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(35, 44, 57, 0.96),
+      rgba(23, 25, 33, 0.97)
+    );
+}
+
+.player-main-unit {
+  display: flex;
+  min-height: 275px;
+  flex: 1;
+  align-items: center;
+  padding: 28px;
+}
+
+.player-main-unit .unit-readout {
+  max-width: 320px;
+  margin: auto;
+}
+
+.player-main-unit
+  .compact-unit-title strong {
+  font-size: 22px;
+}
+
+.player-main-unit .simple-stats span {
+  padding: 9px 5px;
+  font-size: 12px;
+}
+
+.player-main-unit .simple-stats strong {
+  font-size: 14px;
+}
+
+.player-main-unit .charge-diamonds {
+  margin-top: 15px;
+  font-size: 22px;
+}
+
+.current-player-unit {
+  border-color: #6da8d8;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(44, 74, 101, 0.98),
+      rgba(27, 38, 53, 0.98)
+    );
+  box-shadow:
+    inset 0 0 0 1px #6da8d8,
+    0 0 20px rgba(75, 144, 200, 0.2);
+}
+
+.defeated-player-unit {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.companion-row {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(115px, 1fr)
+    );
+  gap: 8px;
+}
+
+.companion-unit {
+  min-height: 130px;
+  padding: 12px;
+}
+
+.empty-companion-row {
+  display: grid;
+  min-height: 90px;
+  place-items: center;
+  border: 1px dashed #3e4049;
+  border-radius: 8px;
+  color: #63656f;
+  font-size: 12px;
+}
+
+/* ========================================================
+   中部敌人资料
+   ======================================================== */
+
+.selected-enemy-panel {
+  min-height: 500px;
+  overflow-y: auto;
+}
+
+.selected-enemy-panel
+  > .simple-stats {
+  margin-bottom: 16px;
+}
+
+.selected-enemy-panel
+  .enemy-action-entry {
+  background: rgba(17, 19, 26, 0.78);
+}
+
+.empty-enemy-information {
+  display: grid;
+  min-height: 400px;
+  place-items: center;
+  color: #777984;
+}
+
+/* ========================================================
+   下方行动和日志
+   ======================================================== */
+
+.battle-bottom-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.65fr)
+    minmax(310px, 0.75fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.battle-bottom-layout
+  .command-panel,
+.battle-bottom-layout
+  .log-panel {
+  min-height: 390px;
+}
+
+.command-heading {
+  align-items: center;
+}
+
+.command-heading .waiting-message {
+  margin: 0;
+  font-size: 13px;
+}
+
+.battle-bottom-layout .action-grid {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+}
+
+.battle-bottom-layout
+  .action-button {
+  min-height: 102px;
+}
+
+.log-heading {
+  margin-bottom: 12px;
+}
+
+.battle-bottom-layout
+  .battle-log {
+  height: 305px;
+}
+
+/* ========================================================
+   新战斗界面响应式
+   ======================================================== */
+
+@media (max-width: 1180px) {
+  .combat-stage {
+    grid-template-columns:
+      minmax(330px, 1fr)
+      minmax(250px, 0.7fr);
+  }
+
+  .player-side-panel {
+    grid-column: 1 / -1;
+    min-height: 0;
+  }
+
+  .player-formation {
+    min-height: 0;
+  }
+
+  .player-main-unit {
+    min-height: 210px;
+  }
+}
+
+@media (max-width: 900px) {
+  .combat-stage,
+  .battle-bottom-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .player-side-panel {
+    grid-column: auto;
+  }
+
+  .enemy-side-panel,
+  .selected-enemy-panel,
+  .player-side-panel {
+    min-height: 0;
+  }
+
+  .selected-enemy-panel {
+    max-height: none;
+  }
+
+  .battle-bottom-layout
+    .command-panel,
+  .battle-bottom-layout
+    .log-panel {
+    min-height: 0;
+  }
+
+  .battle-bottom-layout
+    .action-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .battle-bottom-layout
+    .battle-log {
+    height: 330px;
+  }
+}
+
+@media (max-width: 540px) {
+  .battle-screen {
+    width: min(
+      100% - 16px,
+      1440px
+    );
+  }
+
+  .enemy-formation {
+    width: 100%;
+  }
+
+  .enemy-piece-content {
+    width: 112px;
+    padding: 6px;
+  }
+
+  .enemy-piece-content
+    .simple-stats {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .enemy-piece-content
+    .compact-unit-title strong {
+    font-size: 11px;
+  }
+
+  .enemy-piece-content
+    .charge-diamonds {
+    font-size: 11px;
+  }
+
+  .player-main-unit {
+    min-height: 190px;
+    padding: 18px;
+  }
+
+  .battle-bottom-layout
+    .action-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================================
+   雨夜背景
+   ======================================================== */
+
+.battle-atmosphere {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rain-layer {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(20, 31, 49, 0.25),
+      rgba(5, 7, 12, 0.46)
+    );
+}
+
+.rain-layer::before,
+.rain-layer::after {
+  position: absolute;
+  inset: -120px;
+  background-image:
+    repeating-linear-gradient(
+      105deg,
+      transparent 0,
+      transparent 16px,
+      rgba(155, 195, 225, 0.18) 17px,
+      transparent 18px,
+      transparent 34px
+    );
+  content: "";
+  transform: translateY(-20%);
+  animation:
+    church-rain-fall 0.8s linear infinite;
+}
+
+.rain-layer::after {
+  background-image:
+    repeating-linear-gradient(
+      105deg,
+      transparent 0,
+      transparent 29px,
+      rgba(184, 213, 235, 0.1) 30px,
+      transparent 31px,
+      transparent 52px
+    );
+  filter: blur(0.7px);
+  opacity: 0.62;
+  animation-duration: 1.25s;
+  animation-delay: -0.45s;
+}
+
+@keyframes church-rain-fall {
+  from {
+    transform: translate3d(
+      -30px,
+      -140px,
+      0
+    );
+  }
+
+  to {
+    transform: translate3d(
+      70px,
+      140px,
+      0
+    );
+  }
+}
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+  .rain-layer::before,
+  .rain-layer::after {
+    animation: none;
+  }
+}
+
+/* ========================================================
+   CSS版虚空镜面
+   ======================================================== */
+
+.void-mirror-layer {
+  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse at 18% 28%,
+      rgba(102, 57, 151, 0.32),
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 78% 25%,
+      rgba(39, 106, 141, 0.28),
+      transparent 31%
+    ),
+    radial-gradient(
+      ellipse at 55% 82%,
+      rgba(151, 47, 112, 0.22),
+      transparent 37%
+    ),
+    linear-gradient(
+      145deg,
+      #080913,
+      #151124 48%,
+      #05070e
+    );
+}
+
+.void-mirror-layer::before {
+  position: absolute;
+  width: 70vw;
+  height: 70vw;
+  top: -28vw;
+  left: -18vw;
+  border: 2px solid
+    rgba(154, 134, 226, 0.16);
+  border-radius:
+    42% 58% 61% 39% /
+    51% 35% 65% 49%;
+  background:
+    radial-gradient(
+      circle at 62% 58%,
+      rgba(183, 127, 230, 0.2),
+      transparent 48%
+    );
+  box-shadow:
+    inset 0 0 90px
+      rgba(114, 73, 174, 0.21),
+    0 0 90px
+      rgba(58, 89, 160, 0.14);
+  content: "";
+  filter: blur(1px);
+  animation:
+    void-jelly-drift 13s ease-in-out infinite alternate;
+}
+
+.void-mirror-layer::after {
+  position: absolute;
+  right: -20vw;
+  bottom: -32vw;
+  width: 75vw;
+  height: 75vw;
+  border: 2px solid
+    rgba(92, 178, 206, 0.12);
+  border-radius:
+    57% 43% 36% 64% /
+    42% 61% 39% 58%;
+  background:
+    radial-gradient(
+      circle at 35% 28%,
+      rgba(80, 169, 196, 0.18),
+      transparent 52%
+    );
+  box-shadow:
+    inset 0 0 110px
+      rgba(38, 125, 157, 0.18),
+    0 0 90px
+      rgba(87, 52, 152, 0.14);
+  content: "";
+  animation:
+    void-jelly-drift-reverse
+    17s ease-in-out infinite alternate;
+}
+
+@keyframes void-jelly-drift {
+  0% {
+    border-radius:
+      42% 58% 61% 39% /
+      51% 35% 65% 49%;
+    transform:
+      rotate(-7deg)
+      scale(1);
+  }
+
+  50% {
+    border-radius:
+      56% 44% 37% 63% /
+      39% 59% 41% 61%;
+    transform:
+      translate3d(
+        8vw,
+        5vh,
+        0
+      )
+      rotate(6deg)
+      scale(1.08);
+  }
+
+  100% {
+    border-radius:
+      35% 65% 52% 48% /
+      62% 43% 57% 38%;
+    transform:
+      translate3d(
+        2vw,
+        10vh,
+        0
+      )
+      rotate(14deg)
+      scale(0.94);
+  }
+}
+
+@keyframes void-jelly-drift-reverse {
+  0% {
+    border-radius:
+      57% 43% 36% 64% /
+      42% 61% 39% 58%;
+    transform:
+      rotate(8deg)
+      scale(1);
+  }
+
+  100% {
+    border-radius:
+      38% 62% 58% 42% /
+      64% 37% 63% 36%;
+    transform:
+      translate3d(
+        -10vw,
+        -8vh,
+        0
+      )
+      rotate(-12deg)
+      scale(1.12);
+  }
+}
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+  .void-mirror-layer::before,
+  .void-mirror-layer::after {
+    animation: none;
+  }
+}
+
+/* ========================================================
+   战斗界面信息精简
+   ======================================================== */
+
+/* 大面板不再为标题保留空间 */
+
+.formation-panel,
+.selected-enemy-panel,
+.command-panel,
+.log-panel {
+  position: relative;
+}
+
+.floating-count {
+  position: absolute;
+  z-index: 5;
+  top: 12px;
+  right: 12px;
+}
+
+/* 名字与行动力 */
+
+.unit-name-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.unit-name-group {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.unit-name-group > strong {
+  overflow: hidden;
+  color: #eeeae0;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unit-action-power {
+  flex: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(8, 9, 13, 0.58);
+  color: #9698a2;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.unit-action-power strong {
+  margin-left: 2px;
+  color: #eeeae0;
+  font-size: 12px;
+}
+
+/* 信息面板中的名字更醒目 */
+
+.prominent-unit-name-row {
+  margin-bottom: 14px;
+  padding-right: 2px;
+}
+
+.prominent-unit-name-row
+  .unit-name-group > strong {
+  font-size: 22px;
+}
+
+.prominent-unit-name-row
+  .unit-action-power {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.prominent-unit-name-row
+  .unit-action-power strong {
+  font-size: 14px;
+}
+
+/* 详细信息面板只显示 A/D/S */
+
+.simple-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.selected-enemy-panel > .simple-stats {
+  margin-bottom: 16px;
+}
+
+/* 阵列内部限制 */
+
+.unit-readout {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.enemy-piece-content {
+  width: clamp(100px, 34%, 136px);
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  contain: layout paint;
+}
+
+.enemy-piece-content .unit-name-row {
+  gap: 4px;
+}
+
+.enemy-piece-content
+  .unit-name-group > strong {
+  font-size: 12px;
+}
+
+.enemy-piece-content
+  .unit-action-power {
+  padding: 2px 4px;
+  font-size: 9px;
+}
+
+.enemy-piece-content
+  .unit-action-power strong {
+  font-size: 10px;
+}
+
+/* 蓄能不能换行或越出卡片 */
+
+.charge-diamonds {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+  gap: 1px;
+  overflow: hidden;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.charge-diamonds > span {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+/* 不再显示阵列标题后，阵列自身居中占据面板 */
+
+.enemy-side-panel {
+  min-height: 460px;
+  padding-top: 18px;
+}
+
+.enemy-formation {
+  margin: auto;
+}
+
+/* ========================================================
+   我方：主控大区块 + 同伴均分区块
+   ======================================================== */
+
+.player-side-panel {
+  min-height: 460px;
+  padding-top: 18px;
+}
+
+.player-formation {
+  display: grid;
+  height: 420px;
+  min-height: 420px;
+  grid-template-rows:
+    minmax(230px, 3fr)
+    minmax(150px, 2fr);
+  gap: 10px;
+}
+
+.player-main-unit {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  padding: 24px;
+}
+
+.player-main-unit .unit-readout {
+  width: min(100%, 320px);
+  margin: auto;
+}
+
+.player-main-unit
+  .unit-name-group > strong {
+  font-size: 22px;
+}
+
+.player-main-unit
+  .unit-action-power {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.player-main-unit
+  .unit-action-power strong {
+  font-size: 14px;
+}
+
+.player-main-unit .charge-diamonds {
+  margin-top: 14px;
+  font-size: 20px;
+}
+
+/* 同伴共同均分整个下方区域 */
+
+.companion-row {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  gap: 7px;
+}
+
+.companion-count-1 {
+  grid-template-columns: 1fr;
+}
+
+.companion-count-2 {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.companion-count-3 {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+}
+
+.companion-count-4 {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  grid-template-rows:
+    repeat(2, minmax(0, 1fr));
+}
+
+.companion-unit {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  overflow: hidden;
+  padding: 9px;
+}
+
+.companion-unit .unit-name-row {
+  margin-bottom: 5px;
+}
+
+.companion-unit
+  .unit-name-group > strong {
+  font-size: 11px;
+}
+
+.companion-unit
+  .compact-health-text {
+  margin-bottom: 3px;
+  font-size: 9px;
+}
+
+.companion-unit
+  .compact-health-bar {
+  height: 5px;
+  margin-bottom: 5px;
+}
+
+.companion-unit
+  .charge-diamonds {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.empty-companion-row {
+  min-height: 0;
+  height: 100%;
+}
+
+/* ========================================================
+   去掉标题后的下方区域
+   ======================================================== */
+
+.command-status-row {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.command-status-row .waiting-message {
+  margin: 0;
+  font-size: 13px;
+}
+
+.log-panel {
+  padding-top: 20px;
+}
+
+.battle-bottom-layout .battle-log {
+  height: 345px;
+}
+
+/* 标题消失后，行动按钮直接使用可用空间 */
+
+.battle-bottom-layout .command-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.battle-bottom-layout .action-grid {
+  flex: 1;
+  align-content: start;
+}
+
+/* ========================================================
+   窄屏
+   ======================================================== */
+
+@media (max-width: 540px) {
+  .player-formation {
+    height: auto;
+    min-height: 430px;
+    grid-template-rows:
+      minmax(210px, 3fr)
+      minmax(180px, 2fr);
+  }
+
+  .companion-count-3 {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .companion-count-3
+    .companion-unit:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .enemy-piece-content {
+    width: 108px;
+    max-width: calc(100% - 10px);
+    padding: 6px;
+  }
+
+  .enemy-piece-content
+    .charge-diamonds {
+    font-size: 10px;
+  }
+}
+
+/* ========================================================
+   精简后的战斗界面
+   ======================================================== */
+
+.formation-panel,
+.selected-enemy-panel,
+.command-panel,
+.log-panel {
+  position: relative;
+}
+
+.floating-count {
+  position: absolute;
+  z-index: 5;
+  top: 12px;
+  right: 12px;
+}
+
+/* ========================================================
+   单位名字与行动力
+   ======================================================== */
+
+.unit-name-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.unit-name-group {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.unit-name-group > strong {
+  overflow: hidden;
+  color: #eeeae0;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unit-action-power {
+  flex: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(8, 9, 13, 0.58);
+  color: #9698a2;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.unit-action-power strong {
+  margin-left: 2px;
+  color: #eeeae0;
+  font-size: 12px;
+}
+
+.prominent-unit-name-row {
+  margin-bottom: 14px;
+}
+
+.prominent-unit-name-row
+  .unit-name-group > strong {
+  font-size: 22px;
+}
+
+.prominent-unit-name-row
+  .unit-action-power {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.prominent-unit-name-row
+  .unit-action-power strong {
+  font-size: 14px;
+}
+
+/* A、D、S只在资料区域显示 */
+
+.simple-stats {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.selected-enemy-panel > .simple-stats {
+  margin-bottom: 16px;
+}
+
+/* ========================================================
+   阵列中的单位内容
+   ======================================================== */
+
+.unit-readout {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.enemy-piece-content {
+  width: clamp(100px, 34%, 136px);
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  contain: layout paint;
+}
+
+.enemy-piece-content .unit-name-row {
+  gap: 4px;
+}
+
+.enemy-piece-content
+  .unit-name-group > strong {
+  font-size: 12px;
+}
+
+.enemy-piece-content
+  .unit-action-power {
+  padding: 2px 4px;
+  font-size: 9px;
+}
+
+.enemy-piece-content
+  .unit-action-power strong {
+  font-size: 10px;
+}
+
+.charge-diamonds {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+  gap: 1px;
+  overflow: hidden;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.charge-diamonds > span {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+/* ========================================================
+   我方选择状态
+   ======================================================== */
+
+.selectable-player-unit {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* 金色：当前正在查看 */
+
+.selected-player-unit {
+  border-color: #c7a969;
+  box-shadow:
+    inset 0 0 0 1px #c7a969,
+    0 0 18px rgba(199, 169, 105, 0.14);
+}
+
+/* 蓝色：当前真正的行动者 */
+
+.current-player-unit {
+  border-color: #6da8d8;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(44, 74, 101, 0.98),
+      rgba(27, 38, 53, 0.98)
+    );
+  box-shadow:
+    inset 0 0 0 1px #6da8d8,
+    0 0 20px rgba(75, 144, 200, 0.2);
+}
+
+/* 当前查看者也是当前行动者 */
+
+.current-player-unit.selected-player-unit {
+  border-color: #d6c07a;
+  box-shadow:
+    inset 0 0 0 1px #d6c07a,
+    0 0 22px rgba(91, 160, 214, 0.22),
+    0 0 14px rgba(199, 169, 105, 0.16);
+}
+
+/* ========================================================
+   我方阵列
+   ======================================================== */
+
+.enemy-side-panel,
+.player-side-panel {
+  min-height: 460px;
+  padding-top: 18px;
+}
+
+.player-formation {
+  display: grid;
+  height: 420px;
+  min-height: 420px;
+  grid-template-rows:
+    minmax(230px, 3fr)
+    minmax(150px, 2fr);
+  gap: 10px;
+}
+
+.player-main-unit {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  padding: 24px;
+}
+
+.player-main-unit .unit-readout {
+  width: min(100%, 320px);
+  margin: auto;
+}
+
+.player-main-unit
+  .unit-name-group > strong {
+  font-size: 22px;
+}
+
+.player-main-unit
+  .unit-action-power {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.player-main-unit
+  .unit-action-power strong {
+  font-size: 14px;
+}
+
+.player-main-unit
+  .charge-diamonds {
+  margin-top: 14px;
+  font-size: 20px;
+}
+
+.companion-row {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  gap: 7px;
+}
+
+.companion-count-1 {
+  grid-template-columns: 1fr;
+}
+
+.companion-count-2 {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.companion-count-3 {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+}
+
+.companion-count-4 {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  grid-template-rows:
+    repeat(2, minmax(0, 1fr));
+}
+
+.companion-unit {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  overflow: hidden;
+  padding: 9px;
+}
+
+.companion-unit .unit-name-row {
+  margin-bottom: 5px;
+}
+
+.companion-unit
+  .unit-name-group > strong {
+  font-size: 11px;
+}
+
+.companion-unit
+  .compact-health-text {
+  margin-bottom: 3px;
+  font-size: 9px;
+}
+
+.companion-unit
+  .compact-health-bar {
+  height: 5px;
+  margin-bottom: 5px;
+}
+
+.companion-unit
+  .charge-diamonds {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.empty-companion-row {
+  min-height: 0;
+  height: 100%;
+}
+
+/* ========================================================
+   行动区域
+   ======================================================== */
+
+.command-unit-summary {
+  display: grid;
+  grid-template-columns:
+    minmax(210px, 0.8fr)
+    minmax(260px, 1.2fr);
+  align-items: end;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #343640;
+}
+
+.command-unit-summary
+  .prominent-unit-name-row {
+  margin: 0;
+}
+
+.command-unit-summary
+  .simple-stats {
+  margin: 0;
+}
+
+.battle-bottom-layout .command-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.battle-bottom-layout .action-grid {
+  flex: 1;
+  align-content: start;
+}
+
+/* 日志没有标题后增加显示空间 */
+
+.battle-bottom-layout .battle-log {
+  height: 345px;
+}
+
+/* ========================================================
+   响应式
+   ======================================================== */
+
+@media (max-width: 700px) {
+  .command-unit-summary {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 540px) {
+  .player-formation {
+    height: auto;
+    min-height: 430px;
+    grid-template-rows:
+      minmax(210px, 3fr)
+      minmax(180px, 2fr);
+  }
+
+  .companion-count-3 {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .companion-count-3
+    .companion-unit:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .enemy-piece-content {
+    width: 108px;
+    max-width: calc(100% - 10px);
+    padding: 6px;
+  }
+
+  .enemy-piece-content
+    .charge-diamonds {
+    font-size: 10px;
+  }
+}
+
+/* ========================================================
+   图鉴与背包右侧按钮
+   ======================================================== */
+
+.compendium-dock {
+  position: fixed;
+  z-index: 40;
+  top: 50%;
+  right: 12px;
+  display: grid;
+  gap: 8px;
+  transform: translateY(-50%);
+}
+
+.compendium-dock-button {
+  display: grid;
+  width: 58px;
+  min-height: 58px;
+  place-items: center;
+  gap: 2px;
+  padding: 7px 4px;
+  border: 1px solid #4d4d58;
+  border-radius: 9px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(37, 39, 49, 0.97),
+      rgba(17, 19, 26, 0.97)
+    );
+  color: #d4d1c9;
+  cursor: pointer;
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.32);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.compendium-dock-button:hover,
+.compendium-dock-button.active {
+  border-color: #c7a969;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(83, 69, 41, 0.98),
+      rgba(34, 31, 27, 0.98)
+    );
+  transform: translateX(-3px);
+}
+
+.compendium-dock-button strong {
+  color: #dfc476;
+  font-family:
+    "Noto Serif SC",
+    "Songti SC",
+    serif;
+  font-size: 20px;
+}
+
+.compendium-dock-button span {
+  color: #aaa8b0;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+/* ========================================================
+   图鉴弹窗
+   ======================================================== */
+
+.compendium-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 26px;
+  background: rgba(4, 5, 9, 0.8);
+  backdrop-filter: blur(5px);
+}
+
+.compendium-window {
+  display: flex;
+  width: min(1050px, 100%);
+  height: min(780px, calc(100vh - 52px));
+  flex-direction: column;
+  overflow: hidden;
+  padding: 26px;
+}
+
+.compendium-header {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #393a43;
+}
+
+.compendium-header h1 {
+  margin-bottom: 0;
+}
+
+.compendium-close-button {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border: 1px solid #51525d;
+  border-radius: 8px;
+  background: #20222b;
+  color: #c9c6be;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.compendium-close-button:hover {
+  border-color: #c7a969;
+  color: #e2c778;
+}
+
+.compendium-window-content {
+  min-height: 0;
+  flex: 1;
+  padding-top: 18px;
+}
+
+/* ========================================================
+   大量图鉴条目的主从布局
+   ======================================================== */
+
+.library-browser {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-columns:
+    minmax(230px, 0.72fr)
+    minmax(0, 1.6fr);
+  gap: 18px;
+}
+
+.library-list-panel,
+.library-detail-column {
+  min-width: 0;
+  min-height: 0;
+}
+
+.library-list-panel {
+  display: flex;
+  flex-direction: column;
+  padding-right: 14px;
+  border-right: 1px solid #393a43;
+}
+
+.compendium-search {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #464751;
+  border-radius: 7px;
+  outline: none;
+  background: #11131a;
+  color: #e4e0d6;
+  font: inherit;
+}
+
+.compendium-search:focus {
+  border-color: #c7a969;
+}
+
+.compendium-progress {
+  margin: 11px 0;
+  color: #92919a;
+  font-size: 12px;
+}
+
+.library-entry-list {
+  display: grid;
+  min-height: 0;
+  align-content: start;
+  gap: 7px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.library-entry-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #3f4049;
+  border-radius: 7px;
+  background: #191b22;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.library-entry-button:hover,
+.library-entry-button.selected {
+  border-color: #c7a969;
+  background: #26252a;
+}
+
+.library-entry-button strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-entry-button span {
+  flex: none;
+  color: #92919a;
+  font-size: 9px;
+}
+
+.library-entry-button.unknown {
+  opacity: 0.55;
+  filter: grayscale(1);
+}
+
+.empty-list-message,
+.empty-backpack-section {
+  margin: 5px 0;
+  color: #747680;
+  font-size: 11px;
+}
+
+/* ========================================================
+   详细资料
+   ======================================================== */
+
+.library-detail-column {
+  overflow-y: auto;
+  padding-right: 7px;
+}
+
+.entry-detail-panel {
+  padding: 22px;
+  border: 1px solid #41424c;
+  border-radius: 9px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(30, 32, 41, 0.98),
+      rgba(20, 22, 29, 0.98)
+    );
+}
+
+.entry-detail-empty {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  color: #777984;
+}
+
+.compendium-entry-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.compendium-entry-heading h2 {
+  margin: 0;
+  color: #eeeae0;
+  font-family:
+    "Noto Serif SC",
+    "Songti SC",
+    serif;
+  font-size: 25px;
+}
+
+.encountered-mark {
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid #6b8d72;
+  border-radius: 999px;
+  background: rgba(62, 112, 72, 0.16);
+  color: #91cb9b;
+  font-size: 10px;
+}
+
+.compendium-description {
+  color: #bcb9b2;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.compendium-details {
+  display: grid;
+  gap: 7px;
+  margin: 16px 0;
+}
+
+.compendium-details > div {
+  display: grid;
+  grid-template-columns:
+    minmax(105px, 0.32fr)
+    minmax(0, 1fr);
+  gap: 13px;
+  padding: 9px 11px;
+  border-radius: 6px;
+  background: rgba(8, 9, 13, 0.5);
+}
+
+.compendium-details dt {
+  color: #d1b873;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.compendium-details dd {
+  margin: 0;
+  color: #b8b6bd;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.compendium-fairy-comment {
+  margin: 15px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid #c7a969;
+  background: rgba(199, 169, 105, 0.08);
+  color: #d9d1b9;
+  font-family:
+    "Kaiti SC",
+    KaiTi,
+    "Noto Serif SC",
+    serif;
+  line-height: 1.7;
+}
+
+.entry-action-button {
+  display: block;
+  margin-top: 20px;
+  margin-left: auto;
+}
+
+/* ========================================================
+   背包列表
+   ======================================================== */
+
+.backpack-list-panel {
+  overflow-y: auto;
+}
+
+.backpack-section {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 15px;
+}
+
+.backpack-section h3 {
+  margin: 0 0 2px;
+  color: #c9b171;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+/* ========================================================
+   窄屏
+   ======================================================== */
+
+@media (max-width: 760px) {
+  .compendium-dock {
+    top: auto;
+    right: 50%;
+    bottom: 8px;
+    grid-template-columns:
+      repeat(4, 1fr);
+    transform: translateX(50%);
+  }
+
+  .compendium-dock-button {
+    width: 52px;
+    min-height: 50px;
+  }
+
+  .compendium-overlay {
+    padding: 10px;
+  }
+
+  .compendium-window {
+    height: calc(100vh - 20px);
+    padding: 16px;
+  }
+
+  .library-browser {
+    grid-template-columns: 1fr;
+    grid-template-rows:
+      minmax(150px, 0.7fr)
+      minmax(0, 1.3fr);
+  }
+
+  .library-list-panel {
+    padding-right: 0;
+    padding-bottom: 12px;
+    border-right: 0;
+    border-bottom: 1px solid #393a43;
+  }
+
+  .compendium-details > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+/* ========================================================
+   图鉴搜索模式开关
+   ======================================================== */
+
+.compendium-search-row {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+  gap: 7px;
+}
+
+.description-search-toggle {
+  min-width: 58px;
+  padding: 8px 10px;
+  border: 1px solid #464751;
+  border-radius: 7px;
+  background: #1c1e26;
+  color: #9998a1;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.description-search-toggle:hover {
+  border-color: #c7a969;
+}
+
+.description-search-toggle.active {
+  border-color: #c7a969;
+  background:
+    rgba(199, 169, 105, 0.16);
+  color: #e3ca82;
+  box-shadow:
+    inset 0 0 0 1px
+      rgba(199, 169, 105, 0.25);
+}
+
+/* ========================================================
+   背包中的同伴位置
+   ======================================================== */
+
+.companion-slot-summary {
+  flex: none;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #393a43;
+}
+
+.companion-slot-summary h3,
+.companion-position-controls h3 {
+  margin: 0 0 9px;
+  color: #c9b171;
+  font-size: 12px;
+}
+
+.companion-slot-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.companion-slot-button {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid #41424b;
+  border-radius: 6px;
+  background: #171920;
+  color: inherit;
+  text-align: left;
+}
+
+.companion-slot-button.occupied {
+  cursor: pointer;
+}
+
+.companion-slot-button.occupied:hover {
+  border-color: #c7a969;
+}
+
+.companion-slot-button.empty {
+  opacity: 0.45;
+}
+
+.companion-slot-button span {
+  color: #858791;
+  font-size: 9px;
+}
+
+.companion-slot-button strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========================================================
+   同伴位置操作
+   ======================================================== */
+
+.companion-position-controls {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #41424c;
+  border-radius: 9px;
+  background: rgba(18, 20, 27, 0.9);
+}
+
+.companion-position-controls p {
+  margin-bottom: 12px;
+  color: #9b99a2;
+  font-size: 12px;
+}
+
+.companion-position-button-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.companion-position-button {
+  min-width: 0;
+  font-size: 11px;
+}
+
+.companion-position-button.current {
+  border-color: #b96969;
+  color: #e29a9a;
+}
+
+/*
+ * 移动端现在有5个图鉴/背包按钮。
+ */
+@media (max-width: 760px) {
+  .compendium-dock {
+    grid-template-columns:
+      repeat(5, 1fr);
+  }
+
+  .compendium-dock-button {
+    width: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .companion-position-button-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================================
+   五区域流程系统
+   ======================================================== */
+
+.flow-screen {
+  justify-content: center;
+}
+
+.flow-panel {
+  width: min(980px, 100%);
+  min-height: 650px;
+  padding: 32px;
+}
+
+.flow-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #3b3c45;
+}
+
+.flow-header h1 {
+  margin-bottom: 0;
+}
+
+.flow-resource-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 140px;
+  padding: 12px 16px;
+  border: 1px solid #454650;
+  border-radius: 8px;
+  background: #12141a;
+  text-align: right;
+}
+
+.flow-resource-summary span {
+  color: #94959e;
+  font-size: 12px;
+}
+
+.flow-resource-summary strong {
+  color: #ddc474;
+}
+
+.flow-content {
+  padding-top: 26px;
+}
+
+.flow-content > h2 {
+  margin-bottom: 20px;
+  font-family:
+    "Noto Serif SC",
+    "Songti SC",
+    serif;
+  font-size: 28px;
+}
+
+.flow-arcana {
+  margin-bottom: 7px;
+  color: #c7a969;
+  font-family:
+    "Noto Serif SC",
+    "Songti SC",
+    serif;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+}
+
+.flow-story-text {
+  min-height: 280px;
+}
+
+.flow-choice-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.flow-choice-grid.two-columns {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.flow-choice-grid.one-column {
+  width: min(380px, 100%);
+  grid-template-columns: 1fr;
+  margin: 0 auto;
+}
+
+.flow-node-card,
+.flow-reward-card {
+  min-height: 230px;
+  padding: 22px;
+  border: 1px solid #464750;
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      145deg,
+      #20222b,
+      #171920
+    );
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.flow-node-card:hover,
+.flow-reward-card:hover {
+  border-color: #c7a969;
+  background:
+    linear-gradient(
+      145deg,
+      #2a292c,
+      #211f1d
+    );
+  transform: translateY(-2px);
+}
+
+.flow-node-card > span,
+.flow-reward-card > span {
+  display: block;
+  margin-bottom: 16px;
+  color: #9697a0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.flow-node-card > strong,
+.flow-reward-card > strong {
+  display: block;
+  margin-bottom: 12px;
+  color: #e5cf8b;
+  font-family:
+    "Noto Serif SC",
+    "Songti SC",
+    serif;
+  font-size: 24px;
+}
+
+.flow-node-card > p,
+.flow-reward-card > p {
+  margin: 0;
+  color: #aaa8b0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.flow-text-window {
+  min-height: 210px;
+  margin-bottom: 20px;
+  padding: 24px;
+  border: 1px solid #41424c;
+  border-radius: 9px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(27, 29, 38, 0.98),
+      rgba(15, 17, 23, 0.98)
+    );
+  color: #d2cfc7;
+  font-family:
+    "Noto Serif SC",
+    "Songti SC",
+    serif;
+  font-size: 16px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.flow-option-list {
+  display: grid;
+  gap: 10px;
+}
+
+.flow-shop-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.flow-shop-slot {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid #42434d;
+  border-radius: 9px;
+  background: #191b22;
+}
+
+.flow-shop-slot > span {
+  color: #898b94;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.flow-shop-slot h3 {
+  margin: 14px 0;
+  color: #ded9cc;
+  font-size: 18px;
+}
+
+.flow-shop-slot > strong {
+  margin-top: auto;
+  margin-bottom: 14px;
+  color: #d8bd6d;
+}
+
+.flow-shop-slot button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.flow-result-message {
+  margin: 18px 0 0;
+  padding: 13px 15px;
+  border-left: 3px solid #c7a969;
+  background:
+    rgba(199, 169, 105, 0.08);
+  color: #d9d1b9;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.flow-stat-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.flow-stat-button {
+  min-height: 74px;
+  padding: 14px;
+  border: 1px solid #454650;
+  border-radius: 8px;
+  background: #1b1d25;
+  color: #d8d4cb;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.flow-stat-button:hover:not(:disabled) {
+  border-color: #c7a969;
+  background: #252630;
+}
+
+.flow-stat-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.flow-random-stat-button {
+  width: 100%;
+}
+
+.flow-random-stat-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.flow-wheel {
+  display: grid;
+  min-height: 330px;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  border: 1px solid #444650;
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      circle,
+      rgba(112, 86, 45, 0.24),
+      rgba(18, 20, 27, 0.98) 60%
+    );
+}
+
+.wheel-symbol {
+  display: grid;
+  width: 150px;
+  height: 150px;
+  place-items: center;
+  border: 2px solid #c7a969;
+  border-radius: 50%;
+  color: #e1c873;
+  font-family:
+    Georgia,
+    "Noto Serif SC",
+    serif;
+  font-size: 54px;
+  box-shadow:
+    inset 0 0 30px
+      rgba(199, 169, 105, 0.18),
+    0 0 25px
+      rgba(199, 169, 105, 0.12);
+}
+
+.flow-wheel p {
+  margin: 0;
+  color: #aaa8b0;
+}
+
+@media (max-width: 850px) {
+  .flow-choice-grid,
+  .flow-choice-grid.two-columns,
+  .flow-shop-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 580px) {
+  .flow-panel {
+    padding: 20px;
+  }
+
+  .flow-header {
+    flex-direction: column;
+  }
+
+  .flow-resource-summary {
+    width: 100%;
+    text-align: left;
+  }
+
+  .flow-choice-grid,
+  .flow-choice-grid.two-columns,
+  .flow-shop-grid,
+  .flow-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-node-card,
+  .flow-reward-card {
+    min-height: 170px;
+  }
+}
+
+/* ========================================================
+   状态效果图标
+   ======================================================== */
+
+.status-badge-list {
+  display: inline-flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-badge {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: rgba(9, 10, 14, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: help;
+  box-shadow:
+    inset 0 0 7px
+      rgba(255, 255, 255, 0.04);
+}
+
+/* 特殊：金色 */
+
+.status-tag-特殊 {
+  color: #e2c76e;
+  background:
+    rgba(199, 169, 105, 0.14);
+}
+
+/* 正面：绿色 */
+
+.status-tag-正面 {
+  color: #86d494;
+  background:
+    rgba(72, 145, 86, 0.14);
+}
+
+/* 弱化：白色 */
+
+.status-tag-弱化 {
+  color: #ececec;
+  background:
+    rgba(220, 220, 220, 0.1);
+}
+
+/* 异常：蓝色 */
+
+.status-tag-异常 {
+  color: #7dbbea;
+  background:
+    rgba(67, 127, 177, 0.16);
+}
+
+/* DoT：红色 */
+
+.status-tag-DoT {
+  color: #e47777;
+  background:
+    rgba(174, 62, 62, 0.16);
+}
+
+.prominent-unit-name-row
+  .status-badge {
+  width: 25px;
+  height: 25px;
+  font-size: 12px;
+}
+
+@media (max-width: 540px) {
+  .status-badge {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+}
