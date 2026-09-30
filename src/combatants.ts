@@ -237,7 +237,7 @@ export const COMBATANT_DEFINITIONS:
       kind: "enemy",
 
       stats: {
-        maxHp: 96,
+        maxHp: 286,
         attack: 14,
         defense: 5,
         speed: 92,
@@ -381,7 +381,7 @@ export const COMBATANT_DEFINITIONS:
       kind: "enemy",
 
       stats: {
-        maxHp: 58,
+        maxHp: 208,
         attack: 11,
         defense: 8,
         speed: 80,
@@ -528,7 +528,7 @@ export const COMBATANT_DEFINITIONS:
       kind: "enemy",
 
       stats: {
-        maxHp: 50,
+        maxHp: 150,
         attack: 15,
         defense: 3,
         speed: 125,

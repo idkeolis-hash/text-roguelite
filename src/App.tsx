@@ -68,6 +68,7 @@ import {
 
 import {
   getEffectiveBattleStat,
+  getStatusTags,
   type BattleStatusEffect,
 } from "./statuses";
 
@@ -373,6 +374,32 @@ function ChargeDiamonds(props: {
   );
 }
 
+function getBlueActionOverride(
+  action: ActionDefinition,
+  form: string,
+  level: number,
+): ActionDefinition {
+  if (form === "residual") {
+    const residualActions: Record<string, ActionDefinition> = {
+      basic: { id: "basic", name: "青焰怒火", description: "单体1.25倍魔法，附加燃烧（攻击1.25倍）2回合。根据目标的燃烧数量伤害量增加25%，最大增加100%。" },
+      skill: { id: "skill", name: "恐恶凶瞳", description: "敌全体40%附加1层恐惧2回合（分别计算）。根据目标的燃烧数量提升10%概率，最高150%。每成功附加1个，自身回复6%。" },
+      "charged-skill": { id: "charged-skill", name: "弑王者之焰", description: "自身附加残火3回合、1层蓄能减少无效。敌单体根据燃烧数量：1，所有燃烧持续+1；2，附加2层标记；3，净化。" },
+      burst: { id: "burst", name: "无尽的青焰之兽", description: "敌全体2倍魔法，立刻触发一次所有燃烧的伤害并使其持续+1。根据每个目标的燃烧数量获得蓄能，每个目标最多计4层；复起时重新结算一次。变为【原形态】形态。lv不变。" },
+    };
+
+    return residualActions[action.id] ?? action;
+  }
+
+  const originActions: Record<string, ActionDefinition> = {
+    basic: { id: "basic", name: "青之涡流", description: "单体1.25倍物理，解除自身2个异常状态。" },
+    skill: { id: "skill", name: "青之微风", description: "单体附加附风2回合。其他敌人50%概率附加附风。" },
+    "charged-skill": { id: "charged-skill", name: "青之逆转", description: "敌全体附加1层蚀火，自身附加减伤33%、攻击力减少33% 3回合。" },
+    burst: { id: "burst", name: "青之升华", description: level >= 2 ? "净化自身负面，每解除1个蓄能+2。恢复30，攻击力增加30%3回合，变为【残火武装】形态。lv不变。" : "净化自身负面，每解除1个蓄能+1。恢复30，攻击力增加30%3回合，变为【残火武装】形态。使用后lv增加。" },
+  };
+
+  return originActions[action.id] ?? action;
+}
+
 function StatusBadges(props: {
   statuses: BattleStatusEffect[];
 }) {
@@ -384,16 +411,6 @@ function StatusBadges(props: {
     <span className="status-badge-list">
       {props.statuses.map(
         (status) => {
-          const durationText =
-            status.duration < 0
-              ? "永久"
-              : `${status.duration}回合`;
-
-          const stackText =
-            status.stacks > 1
-              ? `\n层数：${status.stacks}`
-              : "";
-
           const cooldown =
             status.definitionId ===
             "draw-sword"
@@ -413,15 +430,26 @@ function StatusBadges(props: {
                 }`
               : "";
 
+          const currentEffect = [
+            status.duration < 0
+              ? "永久"
+              : `${status.duration}回合`,
+            status.stacks > 1
+              ? `${status.stacks}层`
+              : "",
+          ].filter(Boolean).join(" · ");
+
           return (
             <span
               key={status.id}
               className={[
                 "status-badge",
-                `status-tag-${status.tag}`,
+                ...getStatusTags(status).map(
+                  (tag) => `status-tag-${tag}`,
+                ),
               ].join(" ")}
               title={
-                `${status.name}\n${status.description}\n持续时间：${durationText}${stackText}${cooldownText}`
+                `${status.name}\n${status.description}\n当前：${currentEffect}${cooldownText}`
               }
             >
               {status.icon.slice(0, 1)}
@@ -843,6 +871,35 @@ function BattleScreen(props: {
               ?.actionOverrides?.[
                 action.id
               ];
+
+          if (
+            equippedWeapon?.id === "weapon-blue-slayer" &&
+            selectedPlayerUnit
+          ) {
+            const residualNames: Record<string, ActionDefinition> = {
+              basic: { id: "basic", name: "青焰怒火", description: "单体1.25倍魔法，附加燃烧（攻击1.25倍）2回合。根据目标的燃烧数量伤害量增加25%，最大增加100%。" },
+              skill: { id: "skill", name: "恐恶凶瞳", description: "敌全体40%附加1层恐惧2回合（分别计算）。根据目标的燃烧数量提升10%概率，最高150%。每成功附加1个，自身回复6%。" },
+              "charged-skill": { id: "charged-skill", name: "弑王者之焰", description: "自身附加残火3回合、1层蓄能减少无效。敌单体根据燃烧数量：1，所有燃烧持续+1；2，附加2层标记；3，净化。" },
+              burst: { id: "burst", name: "无尽的青焰之兽", description: "敌全体2倍魔法，立刻触发一次所有燃烧的伤害并使其持续+1。根据目标的燃烧数量，蓄能+1（最大+4）。复起。变为【原形态】形态。" },
+            };
+
+            const form = String(
+              selectedPlayerUnit.weaponState?.blueForm ?? "origin",
+            );
+            const level = Number(
+              selectedPlayerUnit.weaponState?.blueLevel ?? 1,
+            );
+
+            return form === "residual"
+              ? residualNames[action.id] ?? action
+              : getBlueActionOverride(
+                  weaponOverride
+                    ? { ...action, ...weaponOverride }
+                    : action,
+                  form,
+                  level,
+                );
+          }
 
           if (weaponOverride) {
             return {
@@ -2649,6 +2706,7 @@ const DOCK_TITLES: Record<
   relic: "遗物图鉴",
   item: "道具图鉴",
   companion: "同伴图鉴",
+  status: "状态图鉴",
   backpack: "背包",
 };
 
@@ -2660,6 +2718,7 @@ const DOCK_BUTTON_LABELS: Record<
   relic: "遗",
   item: "道",
   companion: "伴",
+  status: "状",
   backpack: "包",
 };
 
@@ -2748,6 +2807,9 @@ function CompendiumBrowser(props: {
   const [selectedId, setSelectedId] =
     useState(entries[0]?.id ?? "");
 
+  const [page, setPage] = useState(0);
+  const pageSize = 8;
+
   const normalizedQuery =
     query.trim().toLowerCase();
 
@@ -2797,6 +2859,16 @@ function CompendiumBrowser(props: {
     ) ??
     filteredEntries[0];
 
+  const pageCount = Math.max(
+    1,
+    Math.ceil(filteredEntries.length / pageSize),
+  );
+  const safePage = Math.min(page, pageCount - 1);
+  const visibleEntries = filteredEntries.slice(
+    safePage * pageSize,
+    (safePage + 1) * pageSize,
+  );
+
   return (
     <div className="library-browser">
       <aside className="library-list-panel">
@@ -2810,9 +2882,10 @@ function CompendiumBrowser(props: {
                 : "只搜索名称……"
             }
             onChange={(event) =>
-              setQuery(
-                event.target.value,
-              )
+              {
+                setQuery(event.target.value);
+                setPage(0);
+              }
             }
           />
 
@@ -2833,10 +2906,10 @@ function CompendiumBrowser(props: {
                 : "当前只搜索名称"
             }
             onClick={() =>
-              setSearchDescription(
-                (current) =>
-                  !current,
-              )
+              {
+                setSearchDescription((current) => !current);
+                setPage(0);
+              }
             }
           >
             描述
@@ -2855,7 +2928,7 @@ function CompendiumBrowser(props: {
         </p>
 
         <div className="library-entry-list">
-          {filteredEntries.map(
+          {visibleEntries.map(
             (entry) => (
               <button
                 type="button"
@@ -2896,6 +2969,28 @@ function CompendiumBrowser(props: {
             </p>
           )}
         </div>
+
+        {filteredEntries.length > pageSize && (
+          <div className="compendium-pagination">
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={safePage === 0}
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+            >
+              上一页
+            </button>
+            <span>{safePage + 1} / {pageCount}</span>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={safePage >= pageCount - 1}
+              onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}
+            >
+              下一页
+            </button>
+          </div>
+        )}
       </aside>
 
       <div className="library-detail-column">
@@ -3312,6 +3407,7 @@ function CompendiumDock(props: {
     "relic",
     "item",
     "companion",
+    "status",
     "backpack",
   ];
 

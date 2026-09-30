@@ -199,46 +199,60 @@ export const PROTAGONISTS: ProtagonistDefinition[] = [
   },
   {
     id: "protagonist-fast",
-    name: "主控角色B",
+    name: "白鸟鸟（青柠色）",
     realityDescription:
-      "填写生活状态、性格和当前处境。",
+       `(如果——我那天没有逃跑的话，事情会不一样吗？)
+青涩之兽坐在天台上，看着远处即将落下的太阳时常这样想到。
+握着一条破旧的发带，那是她的——
+对什么事都愿意帮忙，马虎可是认真，就像刚成年的小动物，那獠牙还是极其锋利的。`,
     combatDescription:
-      "填写该角色偏高速、低耐久的特点。",
+      "围绕燃烧、蚀火与残火切换形态，持续压迫敌人的行动空间。",
+    startingWeaponId: "weapon-blue-slayer",
+    startingItemId: null,
+    startingRelicIds: ["relic-unripe-beast-ribbon"],
+    startingCompanionIds: [],
     stats: {
-      maxHp: 68,
-      attack: 15,
-      defense: 3,
-      speed: 135,
+      maxHp: 250,
+      attack: 35,
+      defense: 30,
+      speed: 75,
       actionPower: 2,
 
-      strength: 4,
-      agility: 7,
-      constitution: 3,
-      intelligence: 5,
-      perception: 4,
-      charisma: 4,
+      strength: 7,
+      agility: 11,
+      constitution: 13,
+      intelligence: 12,
+      perception: 9,
+      charisma: 8,
     },
   },
   {
     id: "protagonist-tough",
-    name: "主控角色C",
+    name: "纯白（纯白色的兽之王）",
     realityDescription:
-      "填写生活状态、性格和当前处境。",
+      `对居住没有什么需求，会趴在窗边享受微风轻轻吹过的感觉。
+      银色的王冠在阳光下闪闪发光。
+沉默少语，但总是第一个挡在所有人身前，事情结束后便悄悄离开。
+（只要你还在为我祈祷，我就能去到任何地方，任何地方……）`,
     combatDescription:
-      "填写该角色偏耐久、低速度的特点。",
+      "通过引路针积累层数获得额外行动与蓄能，并用无尽苍剑施加多种异常。",
+    startingWeaponId: "weapon-endless-pale-sword",
+    startingItemId: null,
+    startingRelicIds: ["relic-miracle-compass"],
+    startingCompanionIds: [],
     stats: {
-      maxHp: 105,
-      attack: 17,
-      defense: 6,
-      speed: 78,
+      maxHp: 120,
+      attack: 60,
+      defense: 20,
+      speed: 110,
       actionPower: 2,
 
-      strength: 6,
-      agility: 3,
-      constitution: 7,
-      intelligence: 3,
-      perception: 5,
-      charisma: 4,
+      strength: 14,
+      agility: 12,
+      constitution: 5,
+      intelligence: 9,
+      perception: 13,
+      charisma: 7,
     },
   },
 ];

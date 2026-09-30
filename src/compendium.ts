@@ -4,7 +4,8 @@ export type CompendiumKind =
   | "weapon"
   | "relic"
   | "item"
-  | "companion";
+  | "companion"
+  | "status";
 
 export interface CompendiumDetail {
   label: string;
@@ -62,9 +63,9 @@ export interface RelicCompendiumEntry
 
 export type ItemBattleEffect =
   | {
-      type: "heal-self";
-      amount: number;
-    };
+    type: "heal-self";
+    amount: number;
+  };
 
 export interface ItemCompendiumEntry
   extends BaseCompendiumEntry {
@@ -97,11 +98,110 @@ export interface CompanionCompendiumEntry
   combatantRoleId: string;
 }
 
+export interface StatusCompendiumEntry
+  extends BaseCompendiumEntry {
+  kind: "status";
+  tags: string[];
+}
+
 export type CompendiumEntry =
   | WeaponCompendiumEntry
   | RelicCompendiumEntry
   | ItemCompendiumEntry
-  | CompanionCompendiumEntry;
+  | CompanionCompendiumEntry
+  | StatusCompendiumEntry;
+
+export const STATUS_COMPENDIUM:
+  StatusCompendiumEntry[] = [
+    {
+      id: "status-rebirth",
+      kind: "status",
+      name: "重生",
+      encountered: true,
+      tags: ["特殊", "强化"],
+      description: "死亡时自动复活。",
+      fairyComment: "巴拉巴拉",
+      details: [{ label: "类型", value: "层数型特殊强化状态" }],
+    },
+    {
+      id: "status-stealth",
+      kind: "status",
+      name: "隐身",
+      encountered: true,
+      tags: ["强化"],
+      description: "存在其他盟友时，无法成为单体攻击目标。",
+      fairyComment: "巴拉巴拉",
+      details: [{ label: "类型", value: "覆盖型强化状态" }],
+    },
+    {
+      id: "status-fear",
+      kind: "status",
+      name: "恐惧",
+      encountered: true,
+      tags: ["异常"],
+      description: "行动时有50%概率取消行动，然后解除1层。",
+      fairyComment: "巴拉巴拉",
+      details: [{ label: "类型", value: "层数型异常状态" }],
+    },
+    {
+      id: "status-reprise",
+      kind: "status",
+      name: "复起",
+      encountered: true,
+      tags: ["强化"],
+      description: "拥有者的武器行动效果额外发生一次，然后解除1层。",
+      fairyComment: "巴拉巴拉",
+      details: [{ label: "类型", value: "层数型强化状态" }],
+    },
+    {
+      id: "status-steadfast",
+      kind: "status",
+      name: "坚持",
+      encountered: true,
+      tags: ["强化"],
+      description: "受到致死伤害时保留生命，然后解除1层。",
+      fairyComment: "巴拉巴拉",
+      details: [{ label: "类型", value: "层数型强化效果" }],
+    },
+    ...([
+      ["burning", "燃烧", ["DoT"], "回合结束时受到固定能量伤害。"],
+      ["poison", "中毒", ["DoT"], "回合结束时受到最大生命值百分比的能量伤害。"],
+      ["bleeding", "流血", ["DoT"], "行动开始时受到当前生命值百分比的物理伤害。"],
+      ["confusion", "困惑", ["异常"], "行动时有50%概率取消行动，并受到自身攻击力1倍的伤害。"],
+      ["regeneration", "再生", ["正面"], "回合开始时恢复生命。"],
+      ["healing-blocked", "禁疗", ["异常"], "受到的治疗量为0。"],
+      ["frozen", "冻结", ["异常"], "无法行动。"],
+      ["paralysis", "麻痹", ["异常"], "行动时取消行动并失去一层。"],
+      ["invincible", "无敌", ["正面"], "不受到伤害和负面状态。"],
+      ["sleep", "睡眠", ["异常"], "无法行动，受到伤害会缩短持续时间。"],
+      ["etched", "蚀刻", ["异常"], "无法受到蚀刻以外的状态。"],
+      ["taunt", "嘲讽", ["异常"], "单体攻击必须选择嘲讽来源作为目标。"],
+      ["protector", "守护", ["正面"], "敌人的单体攻击优先选择自己作为目标。"],
+      ["counter", "反击", ["正面"], "受到攻击时反击攻击来源。"],
+      ["damage-nullification", "伤害无效", ["正面"], "抵消一次伤害并失去一层。"],
+      ["ailment-nullification", "异常无效", ["正面"], "抵消一次异常状态并失去一层。"],
+      ["weaken-nullification", "弱化无效", ["正面"], "抵消一次弱化状态并失去一层。"],
+      ["negative-nullification", "负面无效", ["正面"], "抵消一次负面状态并失去一层。"],
+      ["purge-nullification", "净化无效", ["正面"], "抵消一次敌方的净化并失去一层。"],
+      ["pursuit-damage", "追伤", ["正面"], "攻击命中时造成额外固定伤害。"],
+      ["disarmed", "缴械", ["异常"], "无法使用普攻和蓄能爆发。"],
+      ["silenced", "沉默", ["异常"], "无法使用技能和蓄能技能。"],
+      ["charge-locked", "锁定", ["异常"], "无法蓄能或通过普攻获得蓄能。"],
+      ["sealed", "封印", ["异常"], "无法使用蓄能技能和蓄能爆发。"],
+      ["marked", "标记", ["异常"], "守护对被标记目标失效，且无法应用伤害无效状态。"],
+      ["guided-pin", "引路针", ["特殊"], "其他盟友蓄能爆发时，层数+1。层数首次到达3后，每回合行动次数+1、蓄能槽减少2（至少为2）。层数为4时，重置为1，自身附加重生50。"],
+      ["charge-loss-nullification", "蓄能减少无效", ["特殊"], "下一次蓄能减少效果无效，然后解除1层。"],
+    ] as [string, string, string[], string][]).map(([id, name, tags, description]) => ({
+      id: `status-${id}`,
+      kind: "status" as const,
+      name,
+      encountered: true,
+      tags,
+      description,
+      fairyComment: "战斗中会改变行动与结算的状态。",
+      details: [{ label: "类型", value: tags.join("、") }],
+    })),
+  ];
 
 export const WEAPON_COMPENDIUM:
   WeaponCompendiumEntry[] = [
@@ -124,31 +224,31 @@ export const WEAPON_COMPENDIUM:
         basic: {
           name: "双重彩虹",
           description:
-            "单体2次1倍攻击，自身速度+20% 3回合。目标攻击前低于50%生命时，执行2次。",
+            "单体2次1倍物理，自身速度+20% 3回合。目标攻击前低于50%生命时，执行2次。",
         },
 
         skill: {
           name: "雨过天晴",
           description:
-            "单体1.6倍攻击，并赋予1层失衡。",
+            "单体1.6倍物理，附加1层失衡。",
         },
 
         charge: {
           name: "凝聚虹光",
           description:
-            "蓄能+2，不需要选择目标。",
+            "蓄能+2。",
         },
 
         "charged-skill": {
           name: "随风而动",
           description:
-            "满蓄时可用。恢复20%最大生命，并获得乘风3回合。",
+            "恢复20%，附加乘风3回合。",
         },
 
         burst: {
           name: "雨天是勇者的诞生！",
           description:
-            "满蓄时可用。攻、防、速+30%持续3回合，并获得或立即冷却拔剑。",
+            "自身附加攻、防、速+30% 3回合，并附加或立即冷却拔剑。",
         },
       },
 
@@ -160,22 +260,22 @@ export const WEAPON_COMPENDIUM:
         {
           label: "普攻",
           value:
-            "双重彩虹：2次攻击并叠加速度；低生命目标会令行动执行2次",
+            "双重彩虹：单体2次1倍物理，自身速度+20% 3回合。目标攻击前低于50%生命时，执行2次。",
         },
         {
           label: "技能",
           value:
-            "雨过天晴：造成伤害并施加失衡",
+            "雨过天晴：单体1.6倍物理，附加1层失衡。",
         },
         {
           label: "蓄能技能",
           value:
-            "随风而动：恢复生命并获得乘风",
+            "随风而动：恢复20%，附加乘风3回合。",
         },
         {
           label: "蓄能爆发",
           value:
-            "雨天是勇者的诞生！：强化攻防速并获得拔剑",
+            "雨天是勇者的诞生！：自身附加攻、防、速+30% 3回合，并附加或立即冷却拔剑。",
         },
       ],
     },
@@ -240,10 +340,88 @@ export const WEAPON_COMPENDIUM:
         },
       ],
     },
+    {
+      id: "weapon-blue-slayer",
+      kind: "weapon",
+      name: "青羽·青之弑焰",
+      encountered: true,
+      maxCharge: 5,
+      description: "以青焰、燃烧与形态切换为核心的魔法武器。",
+      fairyComment: "青柠色的火焰，看起来很清爽，烧起来却一点也不客气。",
+      actionOverrides: {
+        basic: { name: "青之涡流 / 青焰怒火", description: "青之涡流：单体1.25倍物理，解除自身2个异常状态；拥有残火时，目标附加燃烧（攻击1.25倍）2回合。青焰怒火：单体1.25倍魔法，附加燃烧（攻击1.25倍）2回合；根据目标燃烧数量伤害增加25%，最大100%。" },
+        skill: { name: "青之微风 / 恐恶凶瞳", description: "青之微风：单体附加附风2回合，其他敌人50%概率附加附风。恐恶凶瞳：敌全体40%概率附加1层恐惧2回合；根据目标燃烧数量提升概率，最高150%；每成功附加1个，自身回复6%。" },
+        "charged-skill": { name: "青之逆转 / 弑王者之焰", description: "青之逆转：敌全体附加1层蚀火，自身附加减伤33%、攻击力减少33%3回合。弑王者之焰：自身附加残火3回合、1层蓄能减少无效；根据目标燃烧数量，1层延长燃烧，2层附加2层标记，3层净化。" },
+        burst: { name: "青之升华 / 无尽的青焰之兽", description: "青之升华：净化自身负面，每解除1个蓄能+1；恢复30，攻击力增加30%3回合，变为残火武装，使用后lv增加。lv2每解除1个负面蓄能+2。无尽的青焰之兽：敌全体2倍魔法，触发所有燃烧并使其持续+1，根据目标燃烧数量蓄能增加1（每个目标最多4）；复起时重新结算一次。变为原形态。" },
+      },
+      details: [
+        { label: "蓄能上限", value: "5" },
+        { label: "普攻", value: "青之涡流：单体1.25倍物理，解除自身2个异常状态；拥有残火时，目标附加燃烧（攻击1.25倍）2回合。/青焰怒火：单体1.25倍魔法，附加燃烧（攻击1.25倍）2回合；根据目标燃烧数量伤害增加25%，最大100%。" },
+        { label: "技能", value: "青之微风：单体附加附风2回合，其他敌人50%概率附加附风。/恐恶凶瞳：敌全体40%概率附加1层恐惧2回合；根据目标燃烧数量提升概率，最高150%；每成功附加1个，自身回复6%。" },
+        { label: "蓄能技能", value: "青之逆转：敌全体附加1层蚀火，自身附加减伤33%、攻击力减少33%3回合。/弑王者之焰：自身附加残火3回合、1层蓄能减少无效；根据目标燃烧数量，1层延长燃烧，2层附加2层标记，3层净化。" },
+        { label: "蓄能爆发", value: "青之升华：净化自身负面，每解除1个蓄能+1；恢复30，攻击力增加30%3回合，变为残火武装，使用后lv增加。lv2每解除1个负面蓄能+2。/无尽的青焰之兽：敌全体2倍魔法，触发所有燃烧并使其持续+1，根据目标燃烧数量蓄能增加1（每个目标最多4）；复起。变为原形态。" },
+      ],
+    },
+    {
+      id: "weapon-endless-pale-sword",
+      kind: "weapon",
+      name: "无尽苍剑",
+      encountered: true,
+      maxCharge: 5,
+      description: "仅属于【兽之王】的银白色巨剑，长度来到了惊人的两米半，是一把极其巨大且厚重的武器。在战斗时剑身会变形，两侧的银白色剑刃裂开向内收缩，漏出内部的青蓝色剑刃，整体散发着一股幽蓝色的光芒。",
+      fairyComment: "白得像雪，砍下来的时候也一样冷。",
+      actionOverrides: {
+        basic: { name: "风暴之星", description: "自身附加星附魔2回合，然后单体0.5倍物理攻击2次。" },
+        skill: { name: "循环中的无尽爱恋", description: "单体附加受伤增加35% 2回合，并随机附加一种以下异常1回合：燃烧（攻击力0.5倍），中毒5，流血2，麻痹，冻结。" },
+        "charged-skill": { name: "予你的黑白螺旋", description: "敌全体附加嘲讽2回合，自身附加守护2回合，并使选中的其他盟友附加4层伤害无效2回合。" },
+        burst: { name: "终焉的纯白之兽", description: "目标3倍物理，其余敌人1倍物理攻击；目标每拥有一种异常追加一次0.5倍攻击力固定伤害。" },
+      },
+      details: [
+        { label: "蓄能上限", value: "5" },
+        { label: "普攻", value: "风暴之星：自身附加星附魔2回合，然后单体0.5倍物理攻击2次。" },
+        { label: "技能", value: "循环中的无尽爱恋：单体附加受伤增加35% 2回合，并随机附加一种以下异常1回合：燃烧（攻击力0.5倍），中毒5，流血2，麻痹，冻结。" },
+        { label: "蓄能技能", value: "予你的黑白螺旋：敌全体附加嘲讽2回合，自身附加守护2回合，并使选中的其他盟友附加4层伤害无效2回合。" },
+        { label: "蓄能爆发", value: "终焉的纯白之兽:目标3倍物理，其余敌人1倍物理攻击；目标每拥有一种异常追加一次0.5倍攻击力固定伤害。" },
+      ],
+    },
   ];
 
 export const RELIC_COMPENDIUM:
   RelicCompendiumEntry[] = [
+    {
+      id: "relic-miracle-compass",
+      kind: "relic",
+      name: "奇迹的引路针",
+      encountered: true,
+      description: "以引路针积累奇迹，在复活后继续引导纯白兽之王。",
+      fairyComment: "它不一定指出正确方向，但一定会让你再走一次。",
+      details: [
+        { label: "战斗开始", value: "附加重生50、1层引路针" },
+        { label: "其他盟友蓄能爆发", value: "引路针层数+1" },
+        { label: "首次达到3层", value: "此后每回合行动次数+1，蓄能槽上限-2（最低为2）" },
+        { label: "达到4层", value: "层数重置为1，自身附加重生50" },
+      ],
+      hookIds: [
+        "miracle-compass-battle-start",
+        "miracle-compass-action-start",
+      ],
+    },
+    {
+      id: "relic-unripe-beast-ribbon",
+      kind: "relic",
+      name: "青涩之兽的发带",
+      encountered: true,
+      description: "记录受击蓄能，并在首次蓄能爆发时唤起青焰。",
+      fairyComment: "看起来像发带，实际上很会记仇。",
+      details: [
+        { label: "首次蓄能爆发前", value: "受击时蓄能+1" },
+        { label: "首次蓄能爆发", value: "敌全体附加燃烧（攻击力0.75倍）3回合，自身附加2层异常无效" },
+      ],
+      hookIds: [
+        "unripe-beast-ribbon-damage-taken",
+        "unripe-beast-ribbon-first-burst",
+      ],
+    },
     {
       id: "relic-hero-armament",
       kind: "relic",
@@ -263,10 +441,6 @@ export const RELIC_COMPENDIUM:
           label: "行动开始",
           value:
             "攻击、防御、速度各+10%",
-        },
-        {
-          label: "持续时间",
-          value: "永久",
         },
         {
           label: "单项上限",
@@ -350,7 +524,7 @@ export const ITEM_COMPENDIUM:
       fairyComment:
         "在这里填写妖精对测试回复药的评价。",
 
-         actionName: "测试回复药",
+      actionName: "测试回复药",
       actionDescription:
         "恢复自身28点生命。每场战斗可使用1次。",
       maxUsesPerBattle: 1,
@@ -418,6 +592,10 @@ export const COMPANION_COMPENDIUM:
 export function getCompendiumEntries(
   kind: CompendiumKind,
 ): CompendiumEntry[] {
+  if (kind === "status") {
+    return STATUS_COMPENDIUM;
+  }
+
   if (kind === "weapon") {
     return WEAPON_COMPENDIUM;
   }
@@ -461,6 +639,7 @@ export function getCompendiumEntryById(
   entryId: string,
 ): CompendiumEntry | undefined {
   return [
+    ...STATUS_COMPENDIUM,
     ...WEAPON_COMPENDIUM,
     ...RELIC_COMPENDIUM,
     ...ITEM_COMPENDIUM,

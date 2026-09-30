@@ -1680,8 +1680,8 @@ button.unit-card:not(:disabled):hover {
     );
   content: "";
   transform: translateY(-20%);
-  animation:
-    church-rain-fall 0.8s linear infinite;
+  /* animation:
+    church-rain-fall 0.8s linear infinite; */
 }
 
 .rain-layer::after {
@@ -1696,8 +1696,8 @@ button.unit-card:not(:disabled):hover {
     );
   filter: blur(0.7px);
   opacity: 0.62;
-  animation-duration: 1.25s;
-  animation-delay: -0.45s;
+  /* animation-duration: 1.25s;
+  animation-delay: -0.45s; */
 }
 
 @keyframes church-rain-fall {
@@ -1781,8 +1781,8 @@ button.unit-card:not(:disabled):hover {
       rgba(58, 89, 160, 0.14);
   content: "";
   filter: blur(1px);
-  animation:
-    void-jelly-drift 13s ease-in-out infinite alternate;
+  /* animation:
+    void-jelly-drift 13s ease-in-out infinite alternate; */
 }
 
 .void-mirror-layer::after {
@@ -1808,9 +1808,9 @@ button.unit-card:not(:disabled):hover {
     0 0 90px
       rgba(87, 52, 152, 0.14);
   content: "";
-  animation:
+  /* animation:
     void-jelly-drift-reverse
-    17s ease-in-out infinite alternate;
+    17s ease-in-out infinite alternate; */
 }
 
 @keyframes void-jelly-drift {
@@ -3615,6 +3615,14 @@ button.unit-card:not(:disabled):hover {
     rgba(72, 145, 86, 0.14);
 }
 
+/* 强化：青绿色 */
+
+.status-tag-强化 {
+  color: #8de4c4;
+  background:
+    rgba(54, 164, 132, 0.16);
+}
+
 /* 弱化：白色 */
 
 .status-tag-弱化 {
@@ -3652,4 +3660,12 @@ button.unit-card:not(:disabled):hover {
     height: 20px;
     font-size: 10px;
   }
+}
+
+/* 暂停全部动画与过渡，待性能优化后再逐项恢复。 */
+*,
+*::before,
+*::after {
+  animation: none !important;
+  transition: none !important;
 }

@@ -5,6 +5,8 @@ import type {
 } from "./game";
 
 import {
+  addBuiltInStatus,
+  addBurningStatuses,
   addStatus,
   getEffectiveBattleStat,
   getStatusByDefinition,
@@ -178,10 +180,141 @@ export interface BattleHookDefinition {
   execute: (context: BattleHookContext) => void;
 }
 
+function resolveGuidedPinThreshold(
+  context: BattleHookContext,
+): void {
+  const pin = getStatusByDefinition(
+    context.owner,
+    "guided-pin",
+  );
+
+  if (!pin) {
+    return;
+  }
+
+  if (
+    pin.stacks >= 3 &&
+    pin.data.thresholdReached !== true
+  ) {
+    pin.data.thresholdReached = true;
+    context.owner.actionPower += 1;
+    context.owner.apLeft += 1;
+    context.owner.maxCharge = Math.max(
+      2,
+      context.owner.maxCharge - 2,
+    );
+    context.owner.charge = Math.min(
+      context.owner.charge,
+      context.owner.maxCharge,
+    );
+    context.log(
+      `${context.owner.name}首次达到3层引路针，每回合行动次数+1，蓄能上限减少2。`,
+    );
+  }
+
+  if (
+    pin.data.thresholdReached === true &&
+    pin.stacks >= 4
+  ) {
+    pin.stacks = 1;
+    addBuiltInStatus(
+      context.state,
+      context.owner.id,
+      "rebirth",
+      { value: 50, percent: true },
+    );
+    context.log(
+      `${context.owner.name}的引路针达到4层，重置为1层并获得重生50。`,
+    );
+  }
+}
+
 export const BATTLE_HOOKS: Record<
   string,
   BattleHookDefinition
 > = {
+  "miracle-compass-battle-start": {
+    id: "miracle-compass-battle-start",
+    name: "奇迹的引路针：战斗开始",
+    listenedEvents: ["battle-start"],
+    execute(context) {
+      if (context.event.type !== "battle-start") return;
+      context.owner.rebirthPolicy = {
+        preserveDefinitionIds: ["guided-pin"],
+      };
+      addBuiltInStatus(context.state, context.owner.id, "rebirth", { value: 50, percent: true });
+      addBuiltInStatus(context.state, context.owner.id, "guided-pin", { stacks: 1 });
+    },
+  },
+
+  "miracle-compass-action-start": {
+    id: "miracle-compass-action-start",
+    name: "奇迹的引路针：盟友蓄能爆发",
+    listenedEvents: ["action-used"],
+    execute(context) {
+      const pin = getStatusByDefinition(context.owner, "guided-pin");
+      if (!pin) return;
+      if (context.event.type === "action-used" && context.event.actionId === "burst" && context.event.actorId !== context.owner.id) {
+        pin.stacks += 1;
+        resolveGuidedPinThreshold(context);
+      }
+    },
+  },
+
+  "unripe-beast-ribbon-damage-taken": {
+    id: "unripe-beast-ribbon-damage-taken",
+    name: "青涩之兽的发带：受击蓄能",
+    listenedEvents: ["damage-taken"],
+
+    execute(context) {
+      if (
+        context.event.type !== "damage-taken" ||
+        context.event.targetId !== context.owner.id ||
+        context.owner.charge >= context.owner.maxCharge ||
+        context.owner.hookUsage[
+          "unripe-beast-ribbon-first-burst:first-burst"
+        ]
+      ) {
+        return;
+      }
+
+      context.owner.charge += 1;
+      context.log(`${context.owner.name}的青涩之兽发带使其受击蓄能+1。`);
+    },
+  },
+
+  "unripe-beast-ribbon-first-burst": {
+    id: "unripe-beast-ribbon-first-burst",
+    name: "青涩之兽的发带：首次爆发",
+    listenedEvents: ["action-used"],
+
+    execute(context) {
+      if (
+        context.event.type !== "action-used" ||
+        context.event.actorId !== context.owner.id ||
+        context.event.actionId !== "burst" ||
+        !context.consumeOnce("first-burst")
+      ) {
+        return;
+      }
+
+      addBurningStatuses(
+        context.state,
+        context.getLivingEnemies().map((enemy) => enemy.id),
+        {
+          value: getEffectiveBattleStat(context.owner, "attack") * 0.75,
+          duration: 3,
+          sourceId: context.owner.id,
+        },
+      );
+
+      addBuiltInStatus(context.state, context.owner.id, "ailment-nullification", {
+        stacks: 2,
+      });
+      context.log(`${context.owner.name}的青涩之兽发带唤起青焰。`);
+    },
+  },
+
   "resonant-prism-battle-start": {
     id: "resonant-prism-battle-start",
     name: "余响棱镜：初始共鸣",
