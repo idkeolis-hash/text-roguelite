@@ -34,6 +34,12 @@ import {
 } from "./game";
 
 import {
+  changeInventoryGold,
+  changeInventoryStat,
+  changeInventoryStats,
+} from "./inventoryOperations";
+
+import {
   applyInventoryBonuses,
   createStartingInventory,
   type PlayerInventory,
@@ -71,6 +77,12 @@ import {
   getStatusTags,
   type BattleStatusEffect,
 } from "./statuses";
+
+import {
+  isConfigurationLocked,
+  useBattleConfigurationLock,
+  useConfigurationLocked,
+} from "./configurationLock";
 
 type GamePhase =
   | "opening"
@@ -384,7 +396,7 @@ function getBlueActionOverride(
       basic: { id: "basic", name: "青焰怒火", description: "单体1.25倍魔法，附加燃烧（攻击1.25倍）2回合。根据目标的燃烧数量伤害量增加25%，最大增加100%。" },
       skill: { id: "skill", name: "恐恶凶瞳", description: "敌全体40%附加1层恐惧2回合（分别计算）。根据目标的燃烧数量提升10%概率，最高150%。每成功附加1个，自身回复6%。" },
       "charged-skill": { id: "charged-skill", name: "弑王者之焰", description: "自身附加残火3回合、1层蓄能减少无效。敌单体根据燃烧数量：1，所有燃烧持续+1；2，附加2层标记；3，净化。" },
-      burst: { id: "burst", name: "无尽的青焰之兽", description: "敌全体2倍魔法，立刻触发一次所有燃烧的伤害并使其持续+1。根据每个目标的燃烧数量获得蓄能，每个目标最多计4层；复起时重新结算一次。变为【原形态】形态。lv不变。" },
+      burst: { id: "burst", name: "无尽的青焰之兽", description: "敌全体2倍魔法，立刻触发一次所有燃烧的伤害并使其持续+1。根据每个目标的燃烧数量获得蓄能，每个目标最多计4层；复起。变为【原形态】形态。lv不变。" },
     };
 
     return residualActions[action.id] ?? action;
@@ -818,6 +830,10 @@ function BattleScreen(props: {
   const logEndRef =
     useRef<HTMLDivElement | null>(null);
 
+     useBattleConfigurationLock(
+    battle.status === "playing",
+  );
+
   const playerUnits = battle.units.filter(
     (unit) => unit.side === "player",
   );
@@ -964,51 +980,8 @@ function BattleScreen(props: {
         selectedPlayerUnit.maxCharge,
   );
 
-  /**
-   * 在背包中更换道具时，
-   * 同步修改当前战斗使用的道具。
-   *
-   * 更换道具不会恢复已经消耗的使用次数。
-   */
-  useEffect(() => {
-    setBattle((previousBattle) => {
-      if (
-        previousBattle
-          .equippedItemId ===
-        props.inventory
-          .equippedItemId
-      ) {
-        return previousBattle;
-      }
-
-      const nextItem =
-        getItemById(
-          props.inventory
-            .equippedItemId,
-        );
-
-      return {
-        ...previousBattle,
-
-        equippedItemId:
-          props.inventory
-            .equippedItemId,
-
-        itemUsesLeft: Math.min(
-          previousBattle.itemUsesLeft,
-          nextItem
-            ?.maxUsesPerBattle ??
-            0,
-        ),
-
-        actionSerial:
-          previousBattle.actionSerial +
-          1,
-      };
-    });
-  }, [
-    props.inventory.equippedItemId,
-  ]);
+  // 战斗装备由创建战斗时的库存快照确定。
+  // 战斗期间不从背包同步替换道具。
 
   /**
    * 日志更新后自动滚动到底部。
@@ -1576,15 +1549,8 @@ function FlowScreen(props: {
     );
 
   function addGold(amount: number) {
-    props.setInventory(
-      (current) => ({
-        ...current,
-
-        gold: Math.max(
-          0,
-          current.gold + amount,
-        ),
-      }),
+    props.setInventory((current) =>
+      changeInventoryGold(current, amount),
     );
   }
 
@@ -1592,21 +1558,8 @@ function FlowScreen(props: {
     stat: CoreStatKey,
     amount: number,
   ) {
-    props.setInventory(
-      (current) => ({
-        ...current,
-
-        statBonuses: {
-          ...current.statBonuses,
-
-          [stat]: Math.max(
-            -99,
-            current.statBonuses[
-              stat
-            ] + amount,
-          ),
-        },
-      }),
+    props.setInventory((current) =>
+      changeInventoryStat(current, stat, amount),
     );
   }
 
@@ -1614,26 +1567,8 @@ function FlowScreen(props: {
     stats: CoreStatKey[],
     amount: number,
   ) {
-    props.setInventory(
-      (current) => {
-        const nextBonuses = {
-          ...current.statBonuses,
-        };
-
-        for (const stat of stats) {
-          nextBonuses[stat] =
-            Math.max(
-              -99,
-              nextBonuses[stat] +
-                amount,
-            );
-        }
-
-        return {
-          ...current,
-          statBonuses: nextBonuses,
-        };
-      },
+    props.setInventory((current) =>
+      changeInventoryStats(current, stats, amount),
     );
   }
 
@@ -2727,6 +2662,8 @@ function CompendiumEntryDetail(props: {
   actionLabel?: string;
   onAction?: () => void;
 }) {
+    const configurationLocked =
+    useConfigurationLocked();
   if (!props.entry) {
     return (
       <div className="entry-detail-empty">
@@ -2781,6 +2718,12 @@ function CompendiumEntryDetail(props: {
           <button
             type="button"
             className="primary-button entry-action-button"
+            disabled={configurationLocked}
+            title={
+              configurationLocked
+                ? "战斗中不能修改配置"
+                : undefined
+            }
             onClick={props.onAction}
           >
             {props.actionLabel}
@@ -3024,6 +2967,8 @@ function BackpackBrowser(props: {
     companionId: string | null,
   ) => void;
 }) {
+    const configurationLocked =
+    useConfigurationLocked();
   const otherWeaponIds =
     props.inventory.ownedWeaponIds.filter(
       (id) =>
@@ -3352,6 +3297,12 @@ function BackpackBrowser(props: {
                             ? "current"
                             : "",
                         ].join(" ")}
+                        disabled={configurationLocked}
+                        title={
+                          configurationLocked
+                            ? "战斗中不能调整同伴"
+                            : undefined
+                        }
                         onClick={() =>
                           props.onSetCompanionSlot(
                             slotIndex,

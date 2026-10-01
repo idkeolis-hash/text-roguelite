@@ -168,7 +168,7 @@ export const STATUS_COMPENDIUM:
       ["poison", "中毒", ["DoT"], "回合结束时受到最大生命值百分比的能量伤害。"],
       ["bleeding", "流血", ["DoT"], "行动开始时受到当前生命值百分比的物理伤害。"],
       ["confusion", "困惑", ["异常"], "行动时有50%概率取消行动，并受到自身攻击力1倍的伤害。"],
-      ["regeneration", "再生", ["正面"], "回合开始时恢复生命。"],
+      ["regeneration", "再生", ["强化"], "回合开始时恢复生命。"],
       ["healing-blocked", "禁疗", ["异常"], "受到的治疗量为0。"],
       ["frozen", "冻结", ["异常"], "无法行动。"],
       ["paralysis", "麻痹", ["异常"], "行动时取消行动并失去一层。"],
@@ -190,7 +190,7 @@ export const STATUS_COMPENDIUM:
       ["sealed", "封印", ["异常"], "无法使用蓄能技能和蓄能爆发。"],
       ["marked", "标记", ["异常"], "守护对被标记目标失效，且无法应用伤害无效状态。"],
       ["guided-pin", "引路针", ["特殊"], "其他盟友蓄能爆发时，层数+1。层数首次到达3后，每回合行动次数+1、蓄能槽减少2（至少为2）。层数为4时，重置为1，自身附加重生50。"],
-      ["charge-loss-nullification", "蓄能减少无效", ["特殊"], "下一次蓄能减少效果无效，然后解除1层。"],
+      ["charge-loss-nullification", "蓄能减少无效", ["正面"], "下一次蓄能减少效果无效，然后解除1层。"],
     ] as [string, string, string[], string][]).map(([id, name, tags, description]) => ({
       id: `status-${id}`,
       kind: "status" as const,
