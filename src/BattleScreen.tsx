@@ -549,6 +549,26 @@ function BattleScreen(props: {
   const logEndRef =
     useRef<HTMLDivElement | null>(null);
 
+  const defeatReportedRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      battle.status !== "lost" ||
+      battle.battleKind !== "standard" ||
+      defeatReportedRef.current ||
+      !props.onDefeat
+    ) {
+      return;
+    }
+
+    defeatReportedRef.current = true;
+    props.onDefeat();
+  }, [
+    battle.status,
+    battle.battleKind,
+    props.onDefeat,
+  ]);
+
      useBattleConfigurationLock(
     battle.status === "playing",
   );

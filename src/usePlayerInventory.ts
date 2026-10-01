@@ -1,8 +1,9 @@
-import { useCallback, useState } from "react";
 import {
-  PROTAGONISTS,
-  type ProtagonistDefinition,
-} from "./content";
+  useCallback,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import type { ProtagonistDefinition } from "./content";
 import {
   createStartingInventory,
   type PlayerInventory,
@@ -14,11 +15,10 @@ import {
   equipInventoryWeapon,
 } from "./inventoryConfiguration";
 
-export function usePlayerInventory() {
-  const [inventory, setInventory] = useState<PlayerInventory>(() =>
-    createStartingInventory(PROTAGONISTS[0]),
-  );
-
+export function usePlayerInventory(
+  inventory: PlayerInventory,
+  setInventory: Dispatch<SetStateAction<PlayerInventory>>,
+) {
   const prepareInventory = useCallback(
     (protagonist: ProtagonistDefinition) => {
       if (isConfigurationLocked()) {
@@ -27,36 +27,42 @@ export function usePlayerInventory() {
 
       setInventory(createStartingInventory(protagonist));
     },
-    [],
+    [setInventory],
   );
 
-  const equipWeapon = useCallback((weaponId: string) => {
-    if (isConfigurationLocked()) {
-      return;
-    }
+  const equipWeapon = useCallback(
+    (weaponId: string) => {
+      if (isConfigurationLocked()) {
+        return;
+      }
 
-    setInventory((current) =>
-      equipInventoryWeapon(
-        current,
-        weaponId,
-        isConfigurationLocked(),
-      ),
-    );
-  }, []);
+      setInventory((current) =>
+        equipInventoryWeapon(
+          current,
+          weaponId,
+          isConfigurationLocked(),
+        ),
+      );
+    },
+    [setInventory],
+  );
 
-  const equipItem = useCallback((itemId: string) => {
-    if (isConfigurationLocked()) {
-      return;
-    }
+  const equipItem = useCallback(
+    (itemId: string) => {
+      if (isConfigurationLocked()) {
+        return;
+      }
 
-    setInventory((current) =>
-      equipInventoryItem(
-        current,
-        itemId,
-        isConfigurationLocked(),
-      ),
-    );
-  }, []);
+      setInventory((current) =>
+        equipInventoryItem(
+          current,
+          itemId,
+          isConfigurationLocked(),
+        ),
+      );
+    },
+    [setInventory],
+  );
 
   const setCompanionSlot = useCallback(
     (slotIndex: number, companionId: string | null) => {
@@ -73,7 +79,7 @@ export function usePlayerInventory() {
         ),
       );
     },
-    [],
+    [setInventory],
   );
 
   return {

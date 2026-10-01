@@ -16,12 +16,7 @@ export interface BaseCompendiumEntry {
   id: string;
   name: string;
 
-  /**
-   * 玩家是否已经在游戏中遇到过该条目。
-   *
-   * 未遇到时，图鉴只显示“？？？”。
-   */
-  encountered: boolean;
+  
 
   description: string;
   fairyComment: string;
@@ -117,7 +112,7 @@ export const STATUS_COMPENDIUM:
       id: "status-rebirth",
       kind: "status",
       name: "重生",
-      encountered: true,
+        
       tags: ["特殊", "强化"],
       description: "死亡时自动复活。",
       fairyComment: "巴拉巴拉",
@@ -127,7 +122,7 @@ export const STATUS_COMPENDIUM:
       id: "status-stealth",
       kind: "status",
       name: "隐身",
-      encountered: true,
+       
       tags: ["强化"],
       description: "存在其他盟友时，无法成为单体攻击目标。",
       fairyComment: "巴拉巴拉",
@@ -137,7 +132,7 @@ export const STATUS_COMPENDIUM:
       id: "status-fear",
       kind: "status",
       name: "恐惧",
-      encountered: true,
+       
       tags: ["异常"],
       description: "行动时有50%概率取消行动，然后解除1层。",
       fairyComment: "巴拉巴拉",
@@ -147,7 +142,7 @@ export const STATUS_COMPENDIUM:
       id: "status-reprise",
       kind: "status",
       name: "复起",
-      encountered: true,
+       
       tags: ["强化"],
       description: "拥有者的武器行动效果额外发生一次，然后解除1层。",
       fairyComment: "巴拉巴拉",
@@ -157,7 +152,7 @@ export const STATUS_COMPENDIUM:
       id: "status-steadfast",
       kind: "status",
       name: "坚持",
-      encountered: true,
+       
       tags: ["强化"],
       description: "受到致死伤害时保留生命，然后解除1层。",
       fairyComment: "巴拉巴拉",
@@ -195,7 +190,7 @@ export const STATUS_COMPENDIUM:
       id: `status-${id}`,
       kind: "status" as const,
       name,
-      encountered: true,
+       
       tags,
       description,
       fairyComment: "战斗中会改变行动与结算的状态。",
@@ -209,7 +204,7 @@ export const WEAPON_COMPENDIUM:
       id: "weapon-rainbow",
       kind: "weapon",
       name: "彩虹",
-      encountered: true,
+       
       maxCharge: 4,
 
       description:
@@ -283,7 +278,7 @@ export const WEAPON_COMPENDIUM:
       id: "weapon-placeholder",
       kind: "weapon",
       name: "占位符武器",
-      encountered: true,
+       
       maxCharge: 4,
 
       description:
@@ -324,7 +319,7 @@ export const WEAPON_COMPENDIUM:
       id: "weapon-training-sword",
       kind: "weapon",
       name: "训练长剑",
-      encountered: true,
+       
       maxCharge: 4,
 
       description:
@@ -344,7 +339,7 @@ export const WEAPON_COMPENDIUM:
       id: "weapon-blue-slayer",
       kind: "weapon",
       name: "青羽·青之弑焰",
-      encountered: true,
+       
       maxCharge: 5,
       description: "以青焰、燃烧与形态切换为核心的魔法武器。",
       fairyComment: "青柠色的火焰，看起来很清爽，烧起来却一点也不客气。",
@@ -366,7 +361,7 @@ export const WEAPON_COMPENDIUM:
       id: "weapon-endless-pale-sword",
       kind: "weapon",
       name: "无尽苍剑",
-      encountered: true,
+       
       maxCharge: 5,
       description: "仅属于【兽之王】的银白色巨剑，长度来到了惊人的两米半，是一把极其巨大且厚重的武器。在战斗时剑身会变形，两侧的银白色剑刃裂开向内收缩，漏出内部的青蓝色剑刃，整体散发着一股幽蓝色的光芒。",
       fairyComment: "白得像雪，砍下来的时候也一样冷。",
@@ -392,7 +387,7 @@ export const RELIC_COMPENDIUM:
       id: "relic-miracle-compass",
       kind: "relic",
       name: "奇迹的引路针",
-      encountered: true,
+       
       description: "以引路针积累奇迹，在复活后继续引导纯白兽之王。",
       fairyComment: "它不一定指出正确方向，但一定会让你再走一次。",
       details: [
@@ -410,7 +405,7 @@ export const RELIC_COMPENDIUM:
       id: "relic-unripe-beast-ribbon",
       kind: "relic",
       name: "青涩之兽的发带",
-      encountered: true,
+       
       description: "记录受击蓄能，并在首次蓄能爆发时唤起青焰。",
       fairyComment: "看起来像发带，实际上很会记仇。",
       details: [
@@ -426,7 +421,7 @@ export const RELIC_COMPENDIUM:
       id: "relic-hero-armament",
       kind: "relic",
       name: "勇者武装",
-      encountered: true,
+       
 
       description:
         `一组能够持续记录使用者战斗动作的自适应装备。其内部结构会根据动作开始时采集到的姿态、受力与能量分布，逐步调整输出参数。
@@ -457,7 +452,7 @@ export const RELIC_COMPENDIUM:
       id: "relic-placeholder",
       kind: "relic",
       name: "占位符遗物",
-      encountered: true,
+       
 
       description:
         "流程系统测试期间使用的占位符遗物。目前没有实际战斗效果。",
@@ -483,7 +478,7 @@ export const RELIC_COMPENDIUM:
       id: "relic-resonant-prism",
       kind: "relic",
       name: "余响棱镜",
-      encountered: true,
+       
 
       description:
         "在这里填写余响棱镜的图鉴描述。",
@@ -516,7 +511,7 @@ export const ITEM_COMPENDIUM:
       id: "item-test-medicine",
       kind: "item",
       name: "测试回复药",
-      encountered: true,
+       
 
       description:
         "在这里填写测试回复药的图鉴描述。",
@@ -557,7 +552,7 @@ export const COMPANION_COMPENDIUM:
       id: "companion-cat",
       kind: "companion",
       name: "猫",
-      encountered: true,
+       
       combatantRoleId: "cat-companion",
 
       description:

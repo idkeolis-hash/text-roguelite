@@ -1,9 +1,13 @@
 import {
   useMemo,
-  useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
+import type { GameSession } from "./gameSession";
+import type {
+  CurrentRun,
+  GamePhase,
+} from "./sessionState";
 import {
   CHURCH_PAGES,
   OPENING_PAGES,
@@ -23,18 +27,6 @@ import {
 import BattleScreen from "./BattleScreen";
 import FlowScreen from "./FlowScreen";
 
-type GamePhase =
-  | "opening"
-  | "character-select"
-  | "wake-up"
-  | "tutorial-choice"
-  | "church"
-  | "battle"
-  | "tutorial-end"
-  | "skip-end"
-  | "flow"
- | "complete"
-  | "failed";
 
   function CompleteScreen(props: {
   onRestart: () => void;
@@ -65,6 +57,8 @@ type GamePhase =
 }
 
 function GameContent(props: {
+  run: CurrentRun;
+  session: GameSession;
   inventory: PlayerInventory;
 
   setInventory: Dispatch<
@@ -75,13 +69,19 @@ function GameContent(props: {
     protagonist: ProtagonistDefinition,
   ) => void;
 }) {
-  const [phase, setPhase] =
-    useState<GamePhase>("opening");
+  const {
+    phase,
+    pageIndex,
+    selectedProtagonistId,
+  } = props.run;
 
-  const [pageIndex, setPageIndex] = useState(0);
+  function setPageIndex(value: SetStateAction<number>): void {
+    props.session.setRunField("pageIndex", value);
+  }
 
-  const [selectedProtagonistId, setSelectedProtagonistId] =
-    useState(PROTAGONISTS[0].id);
+  function setSelectedProtagonistId(id: string): void {
+    props.session.setRunField("selectedProtagonistId", id);
+  }
 
   const protagonist = useMemo(
     () =>
@@ -92,8 +92,13 @@ function GameContent(props: {
   );
 
   function changePhase(nextPhase: GamePhase) {
-    setPhase(nextPhase);
-    setPageIndex(0);
+    props.session.updateRun((current) => ({
+      ...current,
+      phase: nextPhase,
+      pageIndex: 0,
+    }));
+
+    props.session.checkpoint();
   }
 
   function advancePages(
@@ -109,17 +114,8 @@ function GameContent(props: {
   }
 
   function restartGame() {
-    setSelectedProtagonistId(
-      PROTAGONISTS[0].id,
-    );
-
-    props.onPrepareInventory(
-      PROTAGONISTS[0],
-    );
-
-    changePhase("opening");
+    props.session.restart();
   }
-
   if (phase === "opening") {
     return (
       <StoryScreen
@@ -247,6 +243,8 @@ function GameContent(props: {
   if (phase === "flow") {
     return (
       <FlowScreen
+        flow={props.run.flow}
+        session={props.session}
         protagonist={protagonist}
         inventory={props.inventory}
         setInventory={
@@ -255,7 +253,7 @@ function GameContent(props: {
         onComplete={() =>
           changePhase("complete")
         }
-        onDefeat={() => changePhase("failed")}
+        onDefeat={props.session.endRun}
       />
     );
   }

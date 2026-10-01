@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PlayerInventory } from "./inventory";
+import type { GameMode } from "./sessionState";
 import {
   getCompendiumEntries,
   getCompendiumEntryById,
@@ -37,7 +38,9 @@ const DOCK_BUTTON_LABELS: Record<
 };
 
 function CompendiumEntryDetail(props: {
-  entry: CompendiumEntry | undefined;
+  entry:
+    | (CompendiumEntry & { encountered: boolean })
+    | undefined;
   actionLabel?: string;
   onAction?: () => void;
 }) {
@@ -114,9 +117,20 @@ function CompendiumEntryDetail(props: {
 
 function CompendiumBrowser(props: {
   kind: CompendiumKind;
+  mode: GameMode;
+  discoveredIds: readonly string[];
 }) {
-  const entries =
-    getCompendiumEntries(props.kind);
+  const discovered = new Set(props.discoveredIds);
+
+  const entries = getCompendiumEntries(props.kind).map(
+    (entry) => ({
+      ...entry,
+      encountered:
+        props.mode === "debug" ||
+        entry.kind === "status" ||
+        discovered.has(entry.id),
+    }),
+  );
 
   const [query, setQuery] =
     useState("");
@@ -430,10 +444,21 @@ function BackpackBrowser(props: {
       listEntries[0]?.id ?? "",
     );
 
- const selectedEntry =
-    getCompendiumEntryById(
-      selectedId,
-    );
+ const safeSelectedId = listEntries.some(
+    (entry) => entry.id === selectedId,
+  )
+    ? selectedId
+    : listEntries[0]?.id ?? "";
+
+  const selectedDefinition =
+    getCompendiumEntryById(safeSelectedId);
+
+  const selectedEntry = selectedDefinition
+    ? {
+        ...selectedDefinition,
+        encountered: true,
+      }
+    : undefined;
 
   const selectedCompanionSlot =
     selectedEntry?.kind ===
@@ -711,6 +736,8 @@ function BackpackBrowser(props: {
 
 function CompendiumDock(props: {
   inventory: PlayerInventory;
+  mode: GameMode;
+  discoveredIds: readonly string[];
 
   onEquipWeapon: (
     weaponId: string,
@@ -853,6 +880,8 @@ function CompendiumDock(props: {
                 <CompendiumBrowser
                   key={openedKind}
                   kind={openedKind}
+                  mode={props.mode}
+                  discoveredIds={props.discoveredIds}
                 />
               )}
             </div>

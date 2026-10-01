@@ -1,10 +1,11 @@
 import {
   useMemo,
-  useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import type { ProtagonistDefinition } from "./content";
+import type { GameSession } from "./gameSession";
+import type { FlowState } from "./sessionState";
 import {
   applyInventoryBonuses,
   type PlayerInventory,
@@ -30,10 +31,8 @@ import {
   rollRelicOrItem,
   rollWheelOutcome,
   type CoreStatKey,
-  type FlowEventDefinition,
   type FlowNodeId,
   type FlowReward,
-  type FlowShopSlot,
 } from "./flow";
 import BattleScreen from "./BattleScreen";
 
@@ -42,50 +41,9 @@ import {
   grantInventoryReward,
 } from "./inventoryRewards";
 
-type FlowView =
-  | {
-      type: "fool";
-    }
-  | {
-      type: "route";
-      options: FlowNodeId[];
-    }
-  | {
-      type: "event";
-      event: FlowEventDefinition;
-      resultText?: string;
-    }
-  | {
-      type: "shop";
-      slots: FlowShopSlot[];
-      message?: string;
-    }
-  | {
-      type: "rest";
-      picksLeft: number;
-      message?: string;
-    }
-  | {
-      type: "magician";
-      rewards: FlowReward[];
-    }
-  | {
-      type: "wheel";
-      spins: number;
-      message?: string;
-    }
-  | {
-      type: "battle";
-      battleType:
-        PlaceholderBattleType;
-    }
-  | {
-      type: "reward";
-      rewards: FlowReward[];
-      title: string;
-    };
-
 function FlowScreen(props: {
+  flow: FlowState;
+  session: GameSession;
   protagonist: ProtagonistDefinition;
   inventory: PlayerInventory;
 
@@ -96,17 +54,25 @@ function FlowScreen(props: {
   onComplete: () => void;
   onDefeat: () => void;
 }) {
-  const [areaNumber, setAreaNumber] =
-    useState(1);
+ const {
+    areaNumber,
+    stageIndex,
+    view,
+  } = props.flow;
 
-  const [stageIndex, setStageIndex] =
-    useState(0);
+  function setAreaNumber(value: SetStateAction<number>): void {
+    props.session.setFlowField("areaNumber", value);
+  }
 
-  const [view, setView] =
-    useState<FlowView>({
-      type: "fool",
-    });
+  function setStageIndex(value: SetStateAction<number>): void {
+    props.session.setFlowField("stageIndex", value);
+  }
 
+  function setView(
+    value: SetStateAction<FlowState["view"]>,
+  ): void {
+    props.session.setFlowField("view", value);
+  }
   const effectiveProtagonist =
     useMemo(
       () =>
@@ -276,27 +242,19 @@ function FlowScreen(props: {
 
   function finishCurrentNode() {
     if (stageIndex < 6) {
-      goToStage(
-        stageIndex + 1,
-      );
-
-      return;
-    }
-
-    if (areaNumber >= 5) {
+      goToStage(stageIndex + 1);
+    } else if (areaNumber >= 5) {
       props.onComplete();
       return;
+    } else {
+      setAreaNumber((current) => current + 1);
+      setStageIndex(0);
+      setView({
+        type: "fool",
+      });
     }
 
-    setAreaNumber(
-      (current) => current + 1,
-    );
-
-    setStageIndex(0);
-
-    setView({
-      type: "fool",
-    });
+    props.session.checkpoint();
   }
 
   function applyEventChoice(
