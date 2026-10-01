@@ -8,6 +8,7 @@ import type { PlayerInventory } from "./inventory";
 import {
   createTutorialBattle,
   getCurrentActor,
+  getActionAvailability,
   getUnitActionInfo,
   performEnemyAction,
   performPlayerAction,
@@ -17,7 +18,6 @@ import {
 } from "./game";
 import {
   getItemById,
-  getWeaponById,
 } from "./compendium";
 import {
   getEffectiveBattleStat,
@@ -27,54 +27,6 @@ import {
 import { useBattleConfigurationLock } from "./configurationLock";
 
 import { canRetryBattle } from "./battleLifecycle";
-
-
-interface ActionDefinition {
-  id: PlayerActionId;
-  name: string;
-  description: string;
-
-  targetRequired?: boolean;
-  requiresFullCharge?: boolean;
-}
-
-const ACTIONS: ActionDefinition[] = [
-  {
-    id: "basic",
-    name: "普攻",
-    description: "对选中敌人造成物理伤害，蓄能+1。",
-  },
-  {
-    id: "skill",
-    name: "技能",
-    description: "造成倍率较高的物理伤害。",
-  },
-  {
-    id: "charge",
-    name: "蓄能",
-    description: "蓄能+2，不需要选择目标。",
-  },
-  {
-    id: "charged-skill",
-    name: "蓄能技能",
-    description: "满蓄时可用，造成物理伤害，蓄能-1。",
-  },
-  {
-    id: "burst",
-    name: "蓄能爆发",
-    description: "满蓄时可用，对所有敌人造成能量伤害。",
-  },
-  {
-    id: "item",
-    name: "道具",
-    description: "恢复生命，每场战斗只能使用1次。",
-  },
-  {
-    id: "special",
-    name: "特殊：防御",
-    description: "降低下一次受到的伤害。",
-  },
-];
 
 function ChargeDiamonds(props: {
   charge: number;
@@ -104,31 +56,6 @@ function ChargeDiamonds(props: {
   );
 }
 
-function getBlueActionOverride(
-  action: ActionDefinition,
-  form: string,
-  level: number,
-): ActionDefinition {
-  if (form === "residual") {
-    const residualActions: Record<string, ActionDefinition> = {
-      basic: { id: "basic", name: "青焰怒火", description: "单体1.25倍魔法，附加燃烧（攻击1.25倍）2回合。根据目标的燃烧数量伤害量增加25%，最大增加100%。" },
-      skill: { id: "skill", name: "恐恶凶瞳", description: "敌全体40%附加1层恐惧2回合（分别计算）。根据目标的燃烧数量提升10%概率，最高150%。每成功附加1个，自身回复6%。" },
-      "charged-skill": { id: "charged-skill", name: "弑王者之焰", description: "自身附加残火3回合、1层蓄能减少无效。敌单体根据燃烧数量：1，所有燃烧持续+1；2，附加2层标记；3，净化。" },
-      burst: { id: "burst", name: "无尽的青焰之兽", description: "敌全体2倍魔法，立刻触发一次所有燃烧的伤害并使其持续+1。根据每个目标的燃烧数量获得蓄能，每个目标最多计4层；复起。变为【原形态】形态。lv不变。" },
-    };
-
-    return residualActions[action.id] ?? action;
-  }
-
-  const originActions: Record<string, ActionDefinition> = {
-    basic: { id: "basic", name: "青之涡流", description: "单体1.25倍物理，解除自身2个异常状态。" },
-    skill: { id: "skill", name: "青之微风", description: "单体附加附风2回合。其他敌人50%概率附加附风。" },
-    "charged-skill": { id: "charged-skill", name: "青之逆转", description: "敌全体附加1层蚀火，自身附加减伤33%、攻击力减少33% 3回合。" },
-    burst: { id: "burst", name: "青之升华", description: level >= 2 ? "净化自身负面，每解除1个蓄能+2。恢复30，攻击力增加30%3回合，变为【残火武装】形态。lv不变。" : "净化自身负面，每解除1个蓄能+1。恢复30，攻击力增加30%3回合，变为【残火武装】形态。使用后lv增加。" },
-  };
-
-  return originActions[action.id] ?? action;
-}
 
 function StatusBadges(props: {
   statuses: BattleStatusEffect[];
@@ -546,6 +473,14 @@ function BattleScreen(props: {
     setSelectedPlayerUnitId,
   ] = useState<string>("player");
 
+  /**
+   * 行动的盟友目标，与当前查看/操作的单位分开。
+   */
+  const [
+    selectedAllyTargetId,
+    setSelectedAllyTargetId,
+  ] = useState<string>("player");
+
   const logEndRef =
     useRef<HTMLDivElement | null>(null);
 
@@ -587,84 +522,11 @@ function BattleScreen(props: {
         unit.id === selectedPlayerUnitId,
     ) ?? playerUnits[0];
 
-    const equippedItem =
-    getItemById(
-      battle.equippedItemId,
-    );
-    const equippedWeapon =
-    getWeaponById(
-      battle.equippedWeaponId,
-    );
+    const equippedItem = getItemById(battle.equippedItemId);
 
-  const displayedActions:
-  ActionDefinition[] =
-    selectedPlayerUnit &&
-    selectedPlayerUnit.role !==
-      "player"
-      ? getUnitActionInfo(
-          selectedPlayerUnit,
-        )
-      : ACTIONS.map((action) => {
-          if (action.id === "item") {
-            return {
-              ...action,
-
-              name:
-                equippedItem
-                  ?.actionName ??
-                "未装备道具",
-
-              description:
-                equippedItem
-                  ?.actionDescription ??
-                "当前没有可以使用的道具。",
-            };
-          }
-
-          const weaponOverride =
-            equippedWeapon
-              ?.actionOverrides?.[
-                action.id
-              ];
-
-          if (
-            equippedWeapon?.id === "weapon-blue-slayer" &&
-            selectedPlayerUnit
-          ) {
-            const residualNames: Record<string, ActionDefinition> = {
-              basic: { id: "basic", name: "青焰怒火", description: "单体1.25倍魔法，附加燃烧（攻击1.25倍）2回合。根据目标的燃烧数量伤害量增加25%，最大增加100%。" },
-              skill: { id: "skill", name: "恐恶凶瞳", description: "敌全体40%附加1层恐惧2回合（分别计算）。根据目标的燃烧数量提升10%概率，最高150%。每成功附加1个，自身回复6%。" },
-              "charged-skill": { id: "charged-skill", name: "弑王者之焰", description: "自身附加残火3回合、1层蓄能减少无效。敌单体根据燃烧数量：1，所有燃烧持续+1；2，附加2层标记；3，净化。" },
-              burst: { id: "burst", name: "无尽的青焰之兽", description: "敌全体2倍魔法，立刻触发一次所有燃烧的伤害并使其持续+1。根据目标的燃烧数量，蓄能+1（最大+4）。复起。变为【原形态】形态。" },
-            };
-
-            const form = String(
-              selectedPlayerUnit.weaponState?.blueForm ?? "origin",
-            );
-            const level = Number(
-              selectedPlayerUnit.weaponState?.blueLevel ?? 1,
-            );
-
-            return form === "residual"
-              ? residualNames[action.id] ?? action
-              : getBlueActionOverride(
-                  weaponOverride
-                    ? { ...action, ...weaponOverride }
-                    : action,
-                  form,
-                  level,
-                );
-          }
-
-          if (weaponOverride) {
-            return {
-              ...action,
-              ...weaponOverride,
-            };
-          }
-
-          return action;
-        });
+  const displayedActions = selectedPlayerUnit
+    ? getUnitActionInfo(selectedPlayerUnit, battle)
+    : [];
 
   const livingSelectedTarget =
     battle.units.find(
@@ -691,7 +553,7 @@ function BattleScreen(props: {
           selectedEnemy,
         ).filter(
           (action) =>
-            action.id !== "charge",
+            action.category !== "charge",
         )
       : [];
 
@@ -712,12 +574,6 @@ function BattleScreen(props: {
     selectedPlayerUnit?.id ===
       battle.currentActorId &&
     (selectedPlayerUnit?.apLeft ?? 0) > 0;
-
-  const fullCharge = Boolean(
-    selectedPlayerUnit &&
-      selectedPlayerUnit.charge >=
-        selectedPlayerUnit.maxCharge,
-  );
 
   // 战斗装备由创建战斗时的库存快照确定。
   // 战斗期间不从背包同步替换道具。
@@ -854,94 +710,22 @@ function BattleScreen(props: {
   ]);
 
   function actionDisabled(
-    action: PlayerActionId,
-  ) {
-    if (
-      !canSelectedPlayerUnitAct ||
-      !selectedPlayerUnit
-    ) {
+    actionId: PlayerActionId,
+  ): boolean {
+    if (!selectedPlayerUnit) {
       return true;
     }
 
-    const isMainProtagonist =
-      selectedPlayerUnit.role ===
-      "player";
-
-      /*
- * 数据驱动同伴使用行动定义本身的条件。
- */
-if (!isMainProtagonist) {
-  const actionDefinition =
-    displayedActions.find(
-      (definition) =>
-        definition.id === action,
-    );
-
-  if (!actionDefinition) {
-    return true;
+    return !getActionAvailability(
+      battle,
+      selectedPlayerUnit.id,
+      actionId,
+      {
+        enemyId: selectedTargetId,
+        allyId: selectedAllyTargetId,
+      },
+    ).allowed;
   }
-
-  if (
-    actionDefinition
-      .requiresFullCharge &&
-    !fullCharge
-  ) {
-    return true;
-  }
-
-  if (
-    actionDefinition
-      .targetRequired &&
-    !livingSelectedTarget
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-    switch (action) {
-      case "charged-skill":
-        return (
-          !fullCharge ||
-          (
-            isMainProtagonist &&
-            !livingSelectedTarget
-          )
-        );
-
-      case "burst":
-        return !fullCharge;
-
-      case "item":
-        return (
-          !isMainProtagonist ||
-          !equippedItem ||
-          battle.itemUsesLeft <= 0
-        );
-
-      case "basic":
-      case "skill":
-        /*
-         * 当前只有主控的普攻和技能需要目标。
-         * 猫的“喵”系列不需要目标。
-         */
-        return (
-          isMainProtagonist &&
-          !livingSelectedTarget
-        );
-
-      case "special":
-        return !isMainProtagonist;
-
-      case "charge":
-        return false;
-
-      default:
-        return true;
-    }
-  }
-
   function useAction(
     action: PlayerActionId,
   ) {
@@ -957,7 +741,10 @@ if (!isMainProtagonist) {
         previousBattle,
         selectedPlayerUnit.id,
         action,
-        selectedTargetId,
+        {
+          enemyId: selectedTargetId,
+          allyId: selectedAllyTargetId,
+        },
       ),
     );
   }
@@ -971,6 +758,7 @@ if (!isMainProtagonist) {
     setBattle(
       createCurrentBattle(),
     );
+    setSelectedAllyTargetId("player");
 
     setSelectedTargetId(
       props.createBattle
@@ -1132,6 +920,38 @@ if (!isMainProtagonist) {
                     unit={selectedPlayerUnit}
                   />
                 </div>
+
+                {displayedActions.some((action) =>
+                  action.targets.some(
+                    (target) =>
+                      target.type === "chosen-ally" ||
+                      target.type === "chosen-other-ally",
+                  ),
+                ) && (
+                  <label>
+                    盟友效果目标：
+                    <select
+                      value={selectedAllyTargetId}
+                      onChange={(event) =>
+                        setSelectedAllyTargetId(event.target.value)
+                      }
+                    >
+                      {playerUnits.map((unit) => (
+                        <option
+                          key={unit.id}
+                          value={unit.id}
+                          disabled={!unit.alive}
+                        >
+                          {unit.name}
+                          {unit.id === selectedPlayerUnit.id
+                            ? "（行动者；其他盟友效果按位置回退）"
+                            : ""}
+                          {!unit.alive ? "（无法战斗）" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
 
                 <div className="action-grid">
                   {displayedActions.map((action) => (

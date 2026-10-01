@@ -2,13 +2,28 @@ import type {
   ProtagonistDefinition,
 } from "./content";
 
+import { getCombatantDefinition } from "./combatants";
+
+import type {
+  ActionEffectContext,
+  ActionSelection,
+  CombatActionDefinition,
+  CombatDamageType,
+} from "./actionTypes";
+
 import {
-  getCombatantAction,
-  getCombatantDefinition,
-  type CombatActionDefinition,
-  type CombatTargetSelector,
-  type CombatDamageType,
-} from "./combatants";
+  findUnitAction,
+  getActionAvailability,
+  resolveCombatTargets,
+} from "./battleActions";
+
+import {
+  executeSpecialAction,
+  hasSpecialActionHandler,
+} from "./weaponActionEffects";
+
+export { getUnitActionInfo } from "./battleActions";
+export { getActionAvailability } from "./battleActions";
 
 import {
   getCompanionById,
@@ -20,27 +35,21 @@ import {
 import {
   emitBattleEvent,
 } from "./hooks";
-
 import {
   addBuiltInStatus,
   addBurningStatuses,
-  addImbalance,
-  addStatus,
   basicChargeIsLocked,
-  checkActionRestriction,
   consumeImbalanceForCharge,
   consumeReprise,
   consumeStatusLayer,
   getEffectiveBattleStat,
   getStatusByDefinition,
-  getStatusTags,
   getStatusNumber,
   getStatusesByDefinition,
   hasStatus,
   notifyStatusDamageTaken,
   preventDefeatByStatus,
   preventDamageByStatus,
-  purgeStatuses,
   resolveForcedAttackTarget,
   tickStatusDurations,
   type BattleStatusEffect,
@@ -79,13 +88,7 @@ export type CoreActionId =
  */
 export type PlayerActionId = string;
 
-export interface EnemyActionInfo {
-  id: string;
-  name: string;
-  description: string;
-  targetRequired?: boolean;
-  requiresFullCharge?: boolean;
-}
+export type EnemyActionInfo = CombatActionDefinition;
 
 export interface BattleUnit {
   id: string;
@@ -196,40 +199,6 @@ export interface BattleState {
 
 const ACTION_INTERVAL_BASE = 10000;
 
-/**
- * 取得任意数据驱动单位的行动资料。
- *
- * 敌人资料面板和同伴行动按钮都使用这个函数。
- */
-export function getUnitActionInfo(
-  unit: BattleUnit,
-): EnemyActionInfo[] {
-  if (unit.role === "player") {
-    return [];
-  }
-
-  const definition =
-    getCombatantDefinition(
-      unit.role,
-    );
-
-  if (!definition) {
-    return [];
-  }
-
-  return definition.actions.map(
-    (action) => ({
-      id: action.id,
-      name: action.name,
-      description:
-        action.description,
-      targetRequired:
-        action.targetRequired,
-      requiresFullCharge:
-        action.requiresFullCharge,
-    }),
-  );
-}
 
 function copyState(
   state: BattleState,
@@ -945,44 +914,37 @@ function finishOneAction(
     return state;
   }
 
-  const actor = getUnit(
-    state,
-    state.currentActorId,
-  );
+  const actor = getUnit(state, state.currentActorId);
 
-  if (!actor || !actor.alive) {
-    state.currentActorId = null;
-    state.actionSerial += 1;
+  if (actor) {
+    if (actor.alive) {
+      emitBattleEvent(state, {
+        type: "action-end",
+        actorId: actor.id,
+      });
+    }
 
-    return beginNextAction(state);
+    actor.apLeft = Math.max(0, actor.apLeft - 1);
+    actor.nextActionAt += getActionInterval(actor);
   }
-
-  emitBattleEvent(state, {
-    type: "action-end",
-    actorId: actor.id,
-  });
-
-  actor.apLeft = Math.max(
-    0,
-    actor.apLeft - 1,
-  );
-
-  /*
-   * 每执行一次行动，就扣除一整条行动条。
-   *
-   * 在nextActionAt模型中，这等价于：
-   * 下一次行动时间增加一次积满行动条所需的时间。
-   */
-  actor.nextActionAt +=
-    getActionInterval(actor);
 
   state.currentActorId = null;
   state.actionSerial += 1;
 
-  /*
-   * 无论当前单位是否还有行动力，
-   * 都重新比较所有单位的行动时间。
-   */
+  const player = getUnit(state, "player");
+
+  if (player && (!player.alive || player.hp <= 0)) {
+    player.hp = 0;
+    player.alive = false;
+    state.status = "lost";
+    addLog(state, `${player.name}失去战斗能力。`);
+    return state;
+  }
+
+  if (checkStandardVictory(state)) {
+    return state;
+  }
+
   return beginNextAction(state);
 }
 
@@ -1107,6 +1069,7 @@ interface DealDamageOptions {
    * 全体攻击不受嘲讽和守护影响。
    */
   canRedirect?: boolean;
+  finalDamageBonus?: number;
 }
 
 function dealDamage(
@@ -1171,6 +1134,10 @@ function dealDamage(
     damageType,
   );
 
+  damage = Math.round(
+    damage * (1 + Math.max(0, options.finalDamageBonus ?? 0)),
+  );
+
   if (hasStatus(defender, "residual-fire")) {
     const burningCount = getBurningCount(attacker);
     damage = Math.max(
@@ -1200,8 +1167,8 @@ function dealDamage(
    * 教程中的魔将不能被真正击杀。
    */
   if (
-    defender.role ===
-      "mage-general" &&
+    state.battleKind === "tutorial" &&
+    defender.role === "mage-general" &&
     remainingHp <= 0
   ) {
     defender.hp = 1;
@@ -1427,8 +1394,8 @@ function dealFixedDamage(
     target.hp - damage;
 
   if (
-    target.role ===
-      "mage-general" &&
+    state.battleKind === "tutorial" &&
+    target.role === "mage-general" &&
     remainingHp <= 0
   ) {
     target.hp = 1;
@@ -2304,1033 +2271,410 @@ export function createPlaceholderBattle(
   return startNextRound(state);
 }
 
-function targetIsRequired(action: PlayerActionId) {
-  return (
-    action === "basic" ||
-    action === "skill" ||
-    action === "charged-skill"
-  );
+function getBurningCount(unit: BattleUnit): number {
+  return getStatusesByDefinition(unit, "burning").length;
 }
 
-function executePlayerBurst(
-  state: BattleState,
-  player: BattleUnit,
-  repeated: boolean,
-) {
-  const enemies = state.units.filter(
-    (unit) =>
-      unit.side === "enemy" &&
-      unit.alive,
-  );
-
-  if (repeated) {
-    addLog(
-      state,
-      `${player.name}的蓄能爆发在余响中复起。`,
-    );
-  } else {
-    addLog(
-      state,
-      `${player.name}释放蓄能爆发。`,
-    );
-  }
-
-  for (const enemy of enemies) {
-    const result = dealDamage(
-      state,
-      player.id,
-      enemy.id,
-      1.35,
-      "energy",
-    );
-
-    addLog(
-      state,
-      `${
-        repeated ? "复起的蓄能爆发" : "蓄能爆发"
-      }对${enemy.name}造成${result.damage}点能量伤害。`,
-    );
-
-    if (result.guardConsumed) {
-      addLog(
-        state,
-        `${enemy.name}的防御状态降低了本次伤害。`,
-      );
-    }
-
-    if (result.defeated) {
-      addLog(
-        state,
-        `${enemy.name}失去战斗能力。`,
-      );
-    }
-  }
-}
-
-/**
- * 根据选择器寻找一个效果的目标。
- */
-function resolveCombatTargets(
-  state: BattleState,
-  actor: BattleUnit,
-  selectedTargetId: string | null,
-  selector: CombatTargetSelector,
-): BattleUnit[] {
-  if (selector.type === "self") {
-    return actor.alive
-      ? [actor]
-      : [];
-  }
-
-  if (
-    selector.type ===
-    "chosen-enemy"
-  ) {
-    const target = selectedTargetId
-      ? getUnit(
-          state,
-          selectedTargetId,
-        )
-      : undefined;
-
-    if (
-      !target ||
-      !target.alive ||
-      target.side === actor.side
-    ) {
-      return [];
-    }
-
-    return [target];
-  }
-
-  if (
-    selector.type ===
-    "main-player"
-  ) {
-    const player =
-      getUnit(state, "player");
-
-    if (!player || !player.alive) {
-      return [];
-    }
-
-    return [player];
-  }
-
-  if (
-    selector.type ===
-    "all-enemies"
-  ) {
-    return state.units.filter(
-      (unit) =>
-        unit.alive &&
-        unit.side !== actor.side,
-    );
-  }
-
-  if (
-    selector.type ===
-    "all-allies"
-  ) {
-    return state.units.filter(
-      (unit) =>
-        unit.alive &&
-        unit.side === actor.side,
-    );
-  }
-
-  if (
-    selector.type ===
-    "ally-role-or-self"
-  ) {
-    const ally = state.units.find(
-      (unit) =>
-        unit.alive &&
-        unit.side === actor.side &&
-        unit.role === selector.roleId,
-    );
-
-    return [ally ?? actor];
-  }
-
-  return [];
-}
-
-function canUseDefinedAction(
-  actor: BattleUnit,
-  action: CombatActionDefinition,
-): boolean {
-  const restriction =
-    checkActionRestriction(
-      actor,
-      action.id,
-    );
-
-  if (!restriction.allowed) {
-    return false;
-  }
-
-  if (
-    action.requiresFullCharge &&
-    actor.charge < actor.maxCharge
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * 执行一个由combatants.ts定义的通用行动。
- *
- * 敌人和同伴都使用这个函数。
- */
-function executeDefinedAction(
+function createActionContext(
   state: BattleState,
   actor: BattleUnit,
   action: CombatActionDefinition,
-  selectedTargetId: string | null,
-) {
-  if (
-    !canUseDefinedAction(
-      actor,
-      action,
-    )
-  ) {
-    addLog(
-      state,
-      `${actor.name}的蓄能槽尚未充满，无法使用${action.name}。`,
-    );
-
-    return false;
-  }
-
-  if (action.targetRequired) {
-    const selectedTarget =
-      selectedTargetId
-        ? getUnit(
-            state,
-            selectedTargetId,
-          )
-        : undefined;
-
-    if (
-      !selectedTarget ||
-      !selectedTarget.alive ||
-      selectedTarget.side ===
-        actor.side
-    ) {
-      addLog(
-        state,
-        "请先选择一名仍然存活的敌人。",
-      );
-
-      return false;
-    }
-  }
-
-  addLog(
+  selection: ActionSelection,
+  executionIndex: number,
+  executionData: Record<string, number>,
+): ActionEffectContext {
+  return {
     state,
-    `${actor.name}使用${action.name}。`,
-  );
+    actor,
+    action,
+    selection,
+    executionIndex,
+    executionData,
 
-  for (const effect of action.effects) {
-    const targets =
-      resolveCombatTargets(
+    targets(selector) {
+      return resolveCombatTargets(
         state,
         actor,
-        selectedTargetId,
-        effect.target,
+        selection,
+        selector,
+      );
+    },
+
+    redirect(target) {
+      return resolveForcedAttackTarget(
+        state,
+        actor,
+        target,
+      );
+    },
+
+    attack(
+      target,
+      multiplier,
+      damageType,
+      area = false,
+      finalDamageBonus = 0,
+    ) {
+      const result = dealDamage(
+        state,
+        actor.id,
+        target.id,
+        multiplier,
+        damageType,
+        {
+          canRedirect: !area,
+          finalDamageBonus,
+        },
       );
 
-    if (effect.type === "damage") {
-      const totalHits =
-        Math.max(
-          1,
-          Math.floor(
-            effect.hits ?? 1,
-          ),
-        );
+      const actual = result.defenderId
+        ? getUnit(state, result.defenderId)
+        : undefined;
 
-      for (const target of targets) {
-        for (
-          let hitIndex = 0;
-          hitIndex < totalHits;
-          hitIndex += 1
-        ) {
-          if (!target.alive) {
-            break;
-          }
-
-          const result = dealDamage(
-            state,
-            actor.id,
-            target.id,
-            effect.multiplier,
-            effect.damageType,
-          );
-
-          const hitText =
-            totalHits > 1
-              ? `第${hitIndex + 1}击`
-              : "";
-
-          const damageTypeName =
-            effect.damageType ===
-            "physical"
-              ? "物理"
-              : "能量";
-
-          addLog(
-            state,
-            `${action.name}${hitText}对${target.name}造成${result.damage}点${damageTypeName}伤害。`,
-          );
-
-          if (
-            result.guardConsumed
-          ) {
-            addLog(
-              state,
-              `${target.name}的防御状态降低了本次伤害。`,
-            );
-          }
-
-          if (result.defeated) {
-            addLog(
-              state,
-              `${target.name}失去战斗能力。`,
-            );
-          }
-        }
-      }
-    }
-
-    if (
-      effect.type ===
-      "gain-charge"
-    ) {
-      for (const target of targets) {
-        const result = gainCharge(
-          state,
-          target,
-          effect.amount,
-        );
-
+      if (actual) {
         addLog(
           state,
-          `${target.name}的蓄能从${result.previous}变为${result.current}。`,
-        );
-      }
-    }
-
-    if (effect.type === "guard") {
-      for (const target of targets) {
-        target.guarded = true;
-
-        addLog(
-          state,
-          `${target.name}获得防御状态。`,
-        );
-      }
-    }
-  }
-
-  if (
-    action.chargeCost === "all"
-  ) {
-    actor.charge = 0;
-
-    addLog(
-      state,
-      `${actor.name}的蓄能归零。`,
-    );
-  } else if (
-    typeof action.chargeCost ===
-    "number"
-  ) {
-    actor.charge = Math.max(
-      0,
-      actor.charge -
-        action.chargeCost,
-    );
-
-    addLog(
-      state,
-      `${actor.name}消耗${action.chargeCost}点蓄能。`,
-    );
-  }
-
-  if (
-    action.requiresFullCharge
-  ) {
-    actor.fullChargeActionsUsed += 1;
-  }
-
-  return true;
-}
-
-/**
- * 玩家手动控制一个数据驱动同伴。
- */
-function performControlledCombatantAction(
-  state: BattleState,
-  actor: BattleUnit,
-  actionId: PlayerActionId,
-  targetId: string | null,
-): BattleState {
-  const action =
-    getCombatantAction(
-      actor.role,
-      actionId,
-    );
-
-  if (!action) {
-    addLog(
-      state,
-      `行动错误：${actor.name}没有ID为“${actionId}”的行动。`,
-    );
-
-    return state;
-  }
-
-  const actionSucceeded =
-    executeDefinedAction(
-      state,
-      actor,
-      action,
-      targetId,
-    );
-
-  if (!actionSucceeded) {
-    return state;
-  }
-
-  emitBattleEvent(state, {
-    type: "action-used",
-    actorId: actor.id,
-    actionId: action.id,
-    repeatCount: 0,
-  });
-
-  actor.actionsTaken += 1;
-
-  if (checkStandardVictory(state)) {
-    return state;
-  }
-
-  checkTeleportCondition(state);
-
-  return finishOneAction(state);
-}
-
-function getBurningCount(unit: BattleUnit): number {
-  return getStatusesByDefinition(
-    unit,
-    "burning",
-  ).length;
-}
-
-function addBlueStatus(
-  state: BattleState,
-  targetId: string,
-  definitionId: string,
-  name: string,
-  icon: string,
-  description: string,
-  options: {
-    duration?: number;
-    stacks?: number;
-    tags?: ("特殊" | "正面" | "强化" | "弱化" | "异常" | "DoT")[];
-    stacking?: "replace" | "independent" | "layers";
-    percentModifiers?: Partial<Record<"attack" | "defense" | "speed", number>>;
-  } = {},
-) {
-  return addStatus(state, targetId, {
-    definitionId,
-    name,
-    icon,
-    description,
-    tags: options.tags ?? ["特殊"],
-    duration: options.duration ?? -1,
-    stacks: options.stacks,
-    stacking: options.stacking ?? "replace",
-    percentModifiers: options.percentModifiers,
-  });
-}
-
-function executeBlueBurst(
-  state: BattleState,
-  player: BattleUnit,
-): void {
-  let chargeGained = 0;
-
-  for (const enemy of state.units.filter(
-    (unit) => unit.side === "enemy" && unit.alive,
-  )) {
-    const burningStatuses = [
-      ...getStatusesByDefinition(enemy, "burning"),
-    ];
-    const burningCount = burningStatuses.length;
-
-    dealDamage(
-      state,
-      player.id,
-      enemy.id,
-      2,
-      "energy",
-    );
-
-    for (const burning of burningStatuses) {
-      if (enemy.alive) {
-        dealFixedDamage(
-          state,
-          getStatusSourceId(burning),
-          enemy.id,
-          getStatusNumber(burning, "value"),
-          "燃烧",
-        );
-      }
-      burning.duration += 1;
-    }
-
-    chargeGained += Math.min(4, burningCount);
-  }
-
-  const previousCharge = player.charge;
-  player.charge = Math.min(
-    player.maxCharge,
-    player.charge + chargeGained,
-  );
-  addLog(
-    state,
-    `${player.name}根据燃烧数量获得${player.charge - previousCharge}点蓄能。`,
-  );
-}
-
-function performBlueWeaponAction(
-  state: BattleState,
-  player: BattleUnit,
-  action: PlayerActionId,
-  targetId: string | null,
-): BattleState {
-  const form = player.weaponState?.blueForm ?? "origin";
-  const level = Number(player.weaponState?.blueLevel ?? 1);
-  const target = targetId ? getUnit(state, targetId) : undefined;
-  const repriseCount = action === "burst" && consumeReprise(
-    state,
-    player,
-    action,
-  ) ? 1 : 0;
-
-  if ((action === "basic" || action === "skill" ||
-      (action === "charged-skill" && form === "residual")) &&
-      (!target || !target.alive)) {
-    return state;
-  }
-
-  if (action === "basic" && target) {
-    const residual = hasStatus(player, "residual-fire");
-    const burningBonus = Math.min(4, getBurningCount(target)) * 0.25;
-    const result = dealDamage(
-      state,
-      player.id,
-      target.id,
-      residual ? 1.25 + burningBonus : 1.25,
-      residual ? "energy" : "physical",
-    );
-
-    if (!residual) {
-      purgeStatuses(state, player.id, player.id, "negative");
-      purgeStatuses(state, player.id, player.id, "negative");
-    }
-
-    addBurningStatuses(state, [target.id], {
-      value: residual
-        ? getEffectiveBattleStat(player, "attack") * 1.25
-        : getEffectiveBattleStat(player, "attack"),
-      duration: 2,
-      sourceId: player.id,
-    });
-    addLog(state, `${player.name}使用青羽攻击${target.name}，造成${result.damage}点伤害。`);
-  }
-
-  if (action === "skill") {
-    const successChance = Math.min(
-      1,
-      0.4 + getBurningCount(target!) * 0.1,
-    );
-
-    if (form === "origin") {
-      addBlueStatus(state, target!.id, "attached-wind", "附风", "风", "被附加燃烧时，其他拥有附风的单位被附加相同的燃烧，然后解除自身的附风。", {
-        duration: 2,
-        tags: ["特殊"],
-      });
-      for (const enemy of state.units.filter((unit) => unit.side === "enemy" && unit.alive && unit.id !== target!.id)) {
-        if (Math.random() < successChance) {
-          addBlueStatus(state, enemy.id, "attached-wind", "附风", "风", "被附加燃烧时，其他拥有附风的单位被附加相同的燃烧，然后解除自身的附风。", { duration: 2, tags: ["特殊"] });
-        }
-      }
-    } else {
-      for (const enemy of state.units.filter((unit) => unit.side === "enemy" && unit.alive)) {
-        if (Math.random() < successChance) {
-          addBuiltInStatus(state, enemy.id, "fear", { duration: 2, stacks: 1 });
-        }
-      }
-    }
-  }
-
-  if (action === "charged-skill") {
-    if (form === "origin") {
-      for (const enemy of state.units.filter((unit) => unit.side === "enemy" && unit.alive)) {
-        addBlueStatus(state, enemy.id, "erosion-fire", "蚀火", "蚀", "被附加燃烧时，层数+1。根据层数，攻击力减少5%（最大50%）。根据层数，回合开始时20%概率%）。", {
-          stacks: 1,
-          stacking: "layers",
-          tags: ["特殊"],
-        });
-      }
-      addBlueStatus(state, player.id, "blue-reversal-defense", "青之逆转·减伤", "减", "受到的伤害降低33%。", {
-        duration: 3,
-        tags: ["强化"],
-      });
-      addBlueStatus(state, player.id, "blue-reversal-attack", "青之逆转·攻击", "攻", "攻击力降低33%。", {
-        duration: 3,
-        tags: ["弱化"],
-        percentModifiers: { attack: -0.33 },
-      });
-    } else {
-      const burningCount = getBurningCount(target!);
-      if (burningCount === 1) {
-        for (const burning of getStatusesByDefinition(target!, "burning")) {
-          burning.duration += 1;
-        }
-      } else if (burningCount === 2) {
-        addBuiltInStatus(state, target!.id, "marked", { stacks: 2, duration: -1 });
-      } else if (burningCount >= 3) {
-        purgeStatuses(state, player.id, target!.id, "negative");
-      }
-      addBlueStatus(state, player.id, "residual-fire", "残火", "残", "受到燃烧敌人的攻击时，根据来源的燃烧数量减少5%伤害（最大50%）。回合结束时，全体敌人附加燃烧（攻击力0.75倍）2回合。", {
-        duration: 3,
-        tags: ["特殊"],
-      });
-      addBuiltInStatus(state, player.id, "charge-loss-nullification", { stacks: 1 });
-    }
-  }
-
-  if (action === "burst") {
-    player.charge = 0;
-
-    if (form === "origin") {
-      const removed = purgeStatuses(state, player.id, player.id, "negative");
-      player.charge = Math.min(player.maxCharge, player.charge + removed.length * (level >= 2 ? 2 : 1));
-      player.hp = Math.min(player.maxHp, player.hp + 30);
-      addBlueStatus(state, player.id, "blue-elevation-attack", "青之升华·攻击", "攻", "攻击力提高30%。", {
-        duration: 3,
-        tags: ["强化"],
-        percentModifiers: { attack: 0.3 },
-      });
-      player.weaponState = { ...player.weaponState, blueForm: "residual", blueLevel: level + 1 };
-    } else {
-      executeBlueBurst(state, player);
-      player.weaponState = { ...player.weaponState, blueForm: "origin", blueLevel: level };
-    }
-  }
-
-  if (action === "charged-skill" && form === "residual") {
-    for (const enemy of state.units.filter((unit) => unit.side === "enemy" && unit.alive)) {
-      for (const burning of getStatusesByDefinition(enemy, "burning")) {
-        burning.duration += 1;
-      }
-    }
-  }
-
-  const actionEvent = emitBattleEvent(state, {
-    type: "action-used",
-    actorId: player.id,
-    actionId: action,
-    repeatCount: 0,
-  });
-
-  if (action === "burst") {
-    const repeatCount = actionEvent.repeatCount + repriseCount;
-    for (let index = 0; index < repeatCount; index += 1) {
-      if (form === "residual") {
-        executeBlueBurst(state, player);
-      }
-    }
-  } else {
-    applyWeaponChargeRule(state, player, action);
-  }
-  player.actionsTaken += 1;
-  return finishOneAction(state);
-}
-
-function performRainbowWeaponAction(
-  state: BattleState,
-  player: BattleUnit,
-  action: PlayerActionId,
-  targetId: string | null,
-  repriseCount = 0,
-): BattleState {
-  if (
-    action === "basic" &&
-    targetId
-  ) {
-    const target =
-      getUnit(state, targetId);
-
-    if (!target || !target.alive) {
-      return state;
-    }
-
-    /*
-     * 在第一次攻击发生前判断生命值。
-     */
-    const repeatWholeAction =
-      target.hp <
-      target.maxHp * 0.5;
-
-    const executionCount =
-      (repeatWholeAction ? 2 : 1) + repriseCount;
-
-    addLog(
-      state,
-      `${player.name}使用双重彩虹。`,
-    );
-
-    for (
-      let executionIndex = 0;
-      executionIndex <
-      executionCount;
-      executionIndex += 1
-    ) {
-      for (
-        let hitIndex = 0;
-        hitIndex < 2;
-        hitIndex += 1
-      ) {
-        if (!target.alive) {
-          break;
-        }
-
-        const result = dealDamage(
-          state,
-          player.id,
-          target.id,
-          1,
-          "physical",
-        );
-
-        addLog(
-          state,
-          `双重彩虹第${executionIndex + 1}次执行的第${hitIndex + 1}击，对${target.name}造成${result.damage}点物理伤害。`,
+          `${action.name}对${actual.name}造成${result.damage}点${
+            damageType === "physical" ? "物理" : "能量"
+          }伤害。`,
         );
 
         if (result.guardConsumed) {
           addLog(
             state,
-            `${target.name}的防御状态降低了本次伤害。`,
+            `${actual.name}的防御状态降低了本次伤害。`,
           );
         }
 
         if (result.defeated) {
           addLog(
             state,
-            `${target.name}失去战斗能力。`,
+            `${actual.name}失去战斗能力。`,
           );
         }
       }
 
-      addStatus(
+      return actual;
+    },
+
+    fixedDamage(target, amount, reason) {
+      dealFixedDamage(
         state,
-        player.id,
-        {
-          definitionId:
-            "double-rainbow-speed",
-
-          name: "双重彩虹·加速",
-          icon: "速",
-          tag: "正面",
-          stacking: "independent",
-          duration: 3,
-
-          description:
-            "速度增加20%。",
-
-          percentModifiers: {
-            speed: 0.2,
-          },
-        },
-      );
-
-      addLog(
-        state,
-        `${player.name}的速度增加20%，持续3回合。`,
-      );
-
-      gainCharge(state, player, 1);
-    }
-  }
-
-  if (
-    action === "skill" &&
-    targetId
-  ) {
-    const target =
-      getUnit(state, targetId);
-
-    if (!target || !target.alive) {
-      return state;
-    }
-
-    const result = dealDamage(
-      state,
-      player.id,
-      target.id,
-      1.6,
-      "physical",
-    );
-
-    addLog(
-      state,
-      `${player.name}使用雨过天晴，对${target.name}造成${result.damage}点物理伤害。`,
-    );
-
-    if (target.alive) {
-      addImbalance(
-        state,
+        actor.id,
         target.id,
-        1,
+        amount,
+        reason,
+      );
+    },
+
+    heal(target, amount) {
+      const healed = restoreHp(
+        state,
+        actor.id,
+        target.id,
+        Math.max(0, Math.round(amount)),
       );
 
       addLog(
         state,
-        `${target.name}附加1层失衡。`,
+        `${action.name}使${target.name}恢复${healed}点生命。`,
       );
-    }
 
-    if (result.defeated) {
+      return healed;
+    },
+
+    gainCharge(target, amount) {
+      const result = gainCharge(state, target, amount);
+
       addLog(
         state,
-        `${target.name}失去战斗能力。`,
+        `${target.name}的蓄能从${result.previous}变为${result.current}。`,
       );
-    }
+    },
+
+    log(message) {
+      addLog(state, message);
+    },
+  };
+}
+
+function executeActionEffects(
+  context: ActionEffectContext,
+): void {
+  if (!context.actor.alive) {
+    return;
   }
 
-  if (
-    action === "charged-skill"
-  ) {
-    if (
-      player.charge <
-      player.maxCharge
-    ) {
-      addLog(
-        state,
-        "蓄能槽尚未充满，无法使用随风而动。",
-      );
-
-      return state;
+  for (const effect of context.action.effects) {
+    if (!context.actor.alive) {
+      break;
     }
 
-    const healAmount =
-      Math.round(
-        player.maxHp * 0.2,
+    const targets = context.targets(effect.target);
+
+    if (targets.length === 0) {
+      context.log(
+        `${context.action.name}的${effect.target.type}效果 miss。`,
       );
-
-    const actualHeal = restoreHp(
-      state,
-      player.id,
-      player.id,
-      healAmount,
-    );
-
-    addStatus(
-      state,
-      player.id,
-      {
-        definitionId:
-          "riding-the-wind",
-
-        name: "乘风",
-        icon: "乘",
-        tag: "特殊",
-        stacking: "replace",
-        duration: 3,
-
-        description:
-          "自身行动结束时，根据当前速度与基础速度的比值，附加持续3回合的速度增加、攻击力增加。",
-
-        hookIds: [
-          "riding-the-wind-action-end",
-        ],
-      },
-    );
-
-    addLog(
-      state,
-      `${player.name}使用随风而动，恢复${actualHeal}点生命并获得乘风3回合，蓄能-1。`,
-    );
-  }
-
-  if (action === "burst") {
-    if (
-      player.charge <
-      player.maxCharge
-    ) {
-      addLog(
-        state,
-        "蓄能槽尚未充满，无法使用雨天是勇者的诞生！",
-      );
-
-      return state;
+      continue;
     }
 
-    const burstBuffs = [
-      {
-        stat: "attack" as const,
-        name: "勇者诞生·攻击",
-        icon: "攻",
-      },
-      {
-        stat: "defense" as const,
-        name: "勇者诞生·防御",
-        icon: "防",
-      },
-      {
-        stat: "speed" as const,
-        name: "勇者诞生·速度",
-        icon: "速",
-      },
-    ];
+    for (const target of targets) {
+      if (!context.actor.alive) {
+        break;
+      }
 
-    for (const buff of burstBuffs) {
-      addStatus(
-        state,
-        player.id,
-        {
-          definitionId:
-            `hero-born-${buff.stat}`,
+      switch (effect.type) {
+        case "damage": {
+          const hits = Math.max(
+            1,
+            Math.floor(effect.hits ?? 1),
+          );
 
-          name: buff.name,
-          icon: buff.icon,
-          tag: "正面",
-          stacking: "replace",
-          duration: 3,
+          const area =
+            effect.target.type === "all-enemies" ||
+            effect.target.type === "all-allies";
 
-          description:
-            `${buff.name}增加30%，持续3回合。`,
+          for (let hit = 0; hit < hits; hit += 1) {
+            if (!target.alive || !context.actor.alive) {
+              break;
+            }
 
-          percentModifiers: {
-            [buff.stat]: 0.3,
-          },
-        },
-      );
-    }
+            context.attack(
+              target,
+              effect.multiplier,
+              effect.damageType,
+              area,
+            );
+          }
+          break;
+        }
 
-    const drawSword =
-      getStatusByDefinition(
-        player,
-        "draw-sword",
-      );
+        case "gain-charge":
+          if (
+            context.action.category === "basic" &&
+            target.id === context.actor.id &&
+            basicChargeIsLocked(context.actor)
+          ) {
+            break;
+          }
 
-    if (drawSword) {
-      drawSword.data.cooldownActions =
-        0;
+          context.gainCharge(target, effect.amount);
+          break;
 
-      addLog(
-        state,
-        `${player.name}的拔剑立即完成冷却。`,
-      );
-    } else {
-      addStatus(
-        state,
-        player.id,
-        {
-          definitionId:
-            "draw-sword",
+        case "guard":
+          target.guarded = true;
+          context.log(`${target.name}获得防御状态。`);
+          break;
 
-          name: "拔剑",
-          icon: "拔",
-          tag: "特殊",
-          duration: -1,
-
-          description:
-            "敌人将要使用蓄能技能或蓄能爆发时，取消该行动并使自身获得1次额外行动。触发后需要经过自身7次行动才能再次触发。",
-
-          hookIds: [
-            "draw-sword-intercept",
-            "draw-sword-cooldown",
-          ],
-
-          data: {
-            cooldownActions: 0,
-          },
-        },
-      );
-
-      addLog(
-        state,
-        `${player.name}获得永久状态拔剑。`,
-      );
-    }
-
-    addLog(
-      state,
-      `${player.name}使用雨天是勇者的诞生！攻击、防御和速度增加30%，持续3回合。`,
-    );
-  }
-
-  const actionEvent =
-    emitBattleEvent(state, {
-      type: "action-used",
-      actorId: player.id,
-      actionId: action,
-      repeatCount: 0,
-    });
-
-  if (action === "burst") {
-    const repeatCount =
-      actionEvent.repeatCount + repriseCount;
-
-    for (
-      let repeatIndex = 0;
-      repeatIndex < repeatCount;
-      repeatIndex += 1
-    ) {
-      for (const buff of [
-        ["attack", "勇者诞生·攻击", "攻"],
-        ["defense", "勇者诞生·防御", "防"],
-        ["speed", "勇者诞生·速度", "速"],
-      ] as const) {
-        addStatus(
-          state,
-          player.id,
-          {
-            definitionId: `hero-born-${buff[0]}`,
-            name: buff[1],
-            icon: buff[2],
-            tag: "正面",
-            stacking: "replace",
-            duration: 3,
-            description:
-              `${buff[1]}增加30%，持续3回合。`,
-            percentModifiers: {
-              [buff[0]]: 0.3,
-            },
-          },
-        );
+        case "heal":
+          context.heal(
+            target,
+            (effect.amount ?? 0) +
+              target.maxHp * (effect.maxHpRatio ?? 0),
+          );
+          break;
       }
     }
   }
 
-  applyWeaponChargeRule(state, player, action);
-  player.actionsTaken += 1;
+  if (context.actor.alive) {
+    executeSpecialAction(context);
+  }
+}
 
-  if (checkStandardVictory(state)) {
+function applyActionChargeCost(
+  state: BattleState,
+  actor: BattleUnit,
+  action: CombatActionDefinition,
+): void {
+  if (action.chargeCost === undefined) {
+    return;
+  }
+
+  if (action.chargeCost === "all") {
+    actor.charge = 0;
+    addLog(state, `${actor.name}消耗全部蓄能。`);
+    return;
+  }
+
+  actor.charge = Math.max(
+    0,
+    actor.charge - action.chargeCost,
+  );
+
+  addLog(
+    state,
+    `${actor.name}消耗${action.chargeCost}点蓄能。`,
+  );
+}
+
+/**
+ * 唯一公共行动入口。
+ * 玩家、同伴和敌人都在此完成检查、效果与结算。
+ */
+function performUnitAction(
+  state: BattleState,
+  actor: BattleUnit,
+  actionId: string,
+  selection: ActionSelection,
+): BattleState {
+  const availability = getActionAvailability(
+    state,
+    actor.id,
+    actionId,
+    selection,
+  );
+
+  if (!availability.allowed) {
+    addLog(
+      state,
+      availability.reason ?? "当前无法使用该行动。",
+    );
     return state;
   }
 
-  checkTeleportCondition(state);
+  const action = findUnitAction(state, actor, actionId);
+  if (!action) {
+    return state;
+  }
+
+  if (
+    action.special &&
+    !hasSpecialActionHandler(action.special)
+  ) {
+    addLog(
+      state,
+      `行动错误：缺少特殊处理器 ${action.special}。`,
+    );
+    return state;
+  }
+
+  const before = emitBattleEvent(state, {
+    type: "before-action-used",
+    actorId: actor.id,
+
+    // 暂时保留旧钩子的 actionId 语义。
+    actionId: action.category,
+    actionDefinitionId: action.id,
+
+    isChargedAction:
+      action.category === "charged-skill" ||
+      action.category === "burst",
+    canceled: false,
+  });
+
+  if (before.canceled) {
+    addLog(
+      state,
+      `${actor.name}的${action.name}被取消。`,
+    );
+
+    actor.actionsTaken += 1;
+    return finishOneAction(state);
+  }
+
+  const repriseCount =
+    action.weaponAction &&
+    consumeReprise(state, actor, action.category)
+      ? 1
+      : 0;
+
+  const costTiming =
+    action.chargeCostTiming ?? "after-effects";
+
+  if (costTiming === "before-effects") {
+    applyActionChargeCost(state, actor, action);
+  }
+
+  addLog(state, `${actor.name}使用${action.name}。`);
+
+  const executionData: Record<string, number> = {};
+
+  executeActionEffects(
+    createActionContext(
+      state,
+      actor,
+      action,
+      selection,
+      0,
+      executionData,
+    ),
+  );
+
+  if (action.category === "item") {
+    state.itemUsesLeft = Math.max(
+      0,
+      state.itemUsesLeft - 1,
+    );
+
+    emitBattleEvent(state, {
+      type: "item-used",
+      actorId: actor.id,
+      itemId: state.equippedItemId,
+    });
+  }
+
+  const used = emitBattleEvent(state, {
+    type: "action-used",
+    actorId: actor.id,
+    actionId: action.category,
+    actionDefinitionId: action.id,
+    repeatCount: 0,
+  });
+
+  // 现有钩子的重复请求继续仅用于爆发。
+  const hookRepeats =
+    action.category === "burst"
+      ? Math.max(0, Math.floor(used.repeatCount))
+      : 0;
+
+  const repeats = repriseCount + hookRepeats;
+
+  for (
+    let index = 0;
+    index < repeats && actor.alive;
+    index += 1
+  ) {
+    addLog(
+      state,
+      `${action.name}额外执行第${index + 1}次效果。`,
+    );
+
+    // 使用本次行动定义快照，不因青羽中途变形而换行动。
+    executeActionEffects(
+      createActionContext(
+        state,
+        actor,
+        action,
+        selection,
+        index + 1,
+        executionData,
+      ),
+    );
+  }
+
+  if (costTiming === "after-effects") {
+    applyActionChargeCost(state, actor, action);
+  }
+
+  if (
+    action.basicCharge &&
+    actor.alive &&
+    !basicChargeIsLocked(actor)
+  ) {
+    gainCharge(state, actor, 1);
+  }
+
+  if (action.requiresFullCharge) {
+    actor.fullChargeActionsUsed += 1;
+  }
+
+  actor.actionsTaken += 1;
+
+  if (state.battleKind === "tutorial") {
+    checkTeleportCondition(state);
+  }
 
   return finishOneAction(state);
 }
@@ -3338,519 +2682,95 @@ function performRainbowWeaponAction(
 export function performPlayerAction(
   originalState: BattleState,
   actorId: string,
-  action: PlayerActionId,
-  targetId: string | null,
+  actionId: PlayerActionId,
+  selectionOrEnemyId: ActionSelection | string | null,
 ): BattleState {
   const state = copyState(originalState);
+  const actor = getUnit(state, actorId);
 
-  if (
-  state.status !== "playing" ||
-  state.currentActorId !== actorId
-) {
-  return state;
-}
-
-const player = getUnit(
-    state,
-    actorId,
-  );
-
-  if (
-    !player ||
-    player.side !== "player" ||
-    !player.alive ||
-    player.apLeft <= 0
-  ) {
+  if (!actor || actor.side !== "player") {
     return state;
   }
 
-  /*
- * 除主控之外的我方单位，
- * 都使用数据驱动的通用行动系统。
- */
-if (player.role !== "player") {
-  return performControlledCombatantAction(
+  // 兼容既有测试和外部调用；页面改用完整选择对象。
+  const selection: ActionSelection =
+    typeof selectionOrEnemyId === "object" &&
+    selectionOrEnemyId !== null
+      ? { ...selectionOrEnemyId }
+      : {
+          enemyId: selectionOrEnemyId,
+          allyId: actor.id,
+        };
+
+  return performUnitAction(
     state,
-    player,
-    action,
-    targetId,
+    actor,
+    actionId,
+    selection,
   );
 }
 
-const restriction =
-    checkActionRestriction(
-      player,
-      action,
-    );
-
-  if (!restriction.allowed) {
-    addLog(
-      state,
-      restriction.reason ??
-        `${player.name}无法使用这个行动。`,
-    );
-
-    return state;
-  }
-  const blueOriginWideCharge =
-    state.equippedWeaponId === "weapon-blue-slayer" &&
-    action === "charged-skill" &&
-    player.weaponState?.blueForm !== "residual";
-
-  if (targetIsRequired(action) && !blueOriginWideCharge) {
-    const target = targetId
-      ? getUnit(state, targetId)
-      : undefined;
-
-    if (
-      !target ||
-      !target.alive ||
-      target.side !== "enemy"
-    ) {
-      addLog(
-        state,
-        "请先选择一个仍然存活的敌人。",
-      );
-
-      return state;
-    }
-  }
-
-  const beforeActionEvent =
-    emitBattleEvent(state, {
-      type: "before-action-used",
-      actorId: player.id,
-      actionId: action,
-
-      isChargedAction:
-        action ===
-          "charged-skill" ||
-        action === "burst",
-
-      canceled: false,
-    });
-
-  if (beforeActionEvent.canceled) {
-    addLog(
-      state,
-      `${player.name}的行动被取消。`,
-    );
-
-    player.actionsTaken += 1;
-
-    return finishOneAction(state);
-  }
-
-  if (
-    state.equippedWeaponId === "weapon-endless-pale-sword" &&
-    (action === "basic" ||
-      action === "skill" ||
-      action === "charged-skill" ||
-      action === "burst")
-  ) {
-    return performPureWhiteWeaponAction(state, player, action, targetId);
-  }
-
-  if (
-    state.equippedWeaponId ===
-      "weapon-blue-slayer" &&
-    (
-      action === "basic" ||
-      action === "skill" ||
-      action === "charged-skill" ||
-      action === "burst"
-    )
-  ) {
-    return performBlueWeaponAction(
-      state,
-      player,
-      action,
-      targetId,
-    );
-  }
-
-  if (
-    state.equippedWeaponId ===
-      "weapon-rainbow" &&
-    (
-      action === "basic" ||
-      action === "skill" ||
-      action ===
-        "charged-skill" ||
-      action === "burst"
-    )
-  ) {
-    const repriseCount = consumeReprise(
-      state,
-      player,
-      action,
-    ) ? 1 : 0;
-
-    return performRainbowWeaponAction(
-      state,
-      player,
-      action,
-      targetId,
-      repriseCount,
-    );
-  }
-
-  const repriseCount = consumeReprise(
-    state,
-    player,
-    action,
-  ) ? 1 : 0;
-
-  if (action === "basic" && targetId) {
-    const target = getUnit(state, targetId)!;
-
-    const result = dealDamage(
-      state,
-      player.id,
-      target.id,
-      1,
-      "physical",
-    );
-
-    addLog(
-      state,
-      `${player.name}对${target.name}发动普攻，造成${result.damage}点物理伤害。`,
-    );
-
-    if (result.guardConsumed) {
-      addLog(
-        state,
-        `${target.name}的防御状态降低了本次伤害。`,
-      );
-    }
-
-    if (result.defeated) {
-      addLog(
-        state,
-        `${target.name}失去战斗能力。`,
-      );
-    }
-  }
-
-  if (action === "skill" && targetId) {
-    const target = getUnit(state, targetId)!;
-
-    const result = dealDamage(
-      state,
-      player.id,
-      target.id,
-      1.55,
-      "physical",
-    );
-
-    addLog(
-      state,
-      `${player.name}使用技能，对${target.name}造成${result.damage}点物理伤害。`,
-    );
-
-    if (result.guardConsumed) {
-      addLog(
-        state,
-        `${target.name}的防御状态降低了本次伤害。`,
-      );
-    }
-
-    if (result.defeated) {
-      addLog(
-        state,
-        `${target.name}失去战斗能力。`,
-      );
-    }
-  }
-
-  if (action === "charge") {
-    const chargeResult = gainCharge(state, player, 2);
-
-    addLog(
-      state,
-      `${player.name}进行蓄能，蓄能从${chargeResult.previous}变为${chargeResult.current}。`,
-    );
-  }
-
-  if (
-    action === "charged-skill" &&
-    targetId
-  ) {
-    if (player.charge < player.maxCharge) {
-      addLog(
-        state,
-        "蓄能槽尚未充满，无法使用蓄能技能。",
-      );
-
-      return state;
-    }
-
-    const target = getUnit(state, targetId)!;
-
-    const result = dealDamage(
-      state,
-      player.id,
-      target.id,
-      2.1,
-      "physical",
-    );
-
-    addLog(
-      state,
-      `${player.name}使用蓄能技能，对${target.name}造成${result.damage}点物理伤害，蓄能-1。`,
-    );
-
-    if (result.guardConsumed) {
-      addLog(
-        state,
-        `${target.name}的防御状态降低了本次伤害。`,
-      );
-    }
-
-    if (result.defeated) {
-      addLog(
-        state,
-        `${target.name}失去战斗能力。`,
-      );
-    }
-  }
-
- if (action === "burst") {
-    if (
-      player.charge <
-      player.maxCharge
-    ) {
-      addLog(
-        state,
-        "蓄能槽尚未充满，无法使用蓄能爆发。",
-      );
-
-      return state;
-    }
-
-    executePlayerBurst(
-      state,
-      player,
-      false,
-    );
-
-    for (
-      let repeatIndex = 0;
-      repeatIndex < repriseCount;
-      repeatIndex += 1
-    ) {
-      executePlayerBurst(
-        state,
-        player,
-        true,
-      );
-    }
-
-  }
-
-  if (action === "item") {
-    if (state.itemUsesLeft <= 0) {
-      addLog(
-        state,
-        "本场战斗的道具使用次数已经耗尽。",
-      );
-
-      return state;
-    }
-
-    const item = getItemById(
-      state.equippedItemId,
-    );
-
-    if (!item) {
-      addLog(
-        state,
-        `道具错误：没有找到ID为“${state.equippedItemId}”的道具。`,
-      );
-
-      return state;
-    }
-
-    if (
-      item.battleEffect.type ===
-      "heal-self"
-    ) {
-      const actualHeal = restoreHp(
-        state,
-        player.id,
-        player.id,
-        item.battleEffect.amount,
-      );
-
-      state.itemUsesLeft -= 1;
-
-      addLog(
-        state,
-        `${player.name}使用${item.name}，恢复${actualHeal}点生命。本场剩余使用次数：${state.itemUsesLeft}。`,
-      );
-    }
-
-    emitBattleEvent(state, {
-      type: "item-used",
-      actorId: player.id,
-      itemId: item.id,
-    });
-  }
-
-  if (action === "special") {
-    player.guarded = true;
-
-    addLog(
-      state,
-      `${player.name}进入防御状态，下一次受到的伤害降低。`,
-    );
-  }
-
- const actionEvent =
-    emitBattleEvent(state, {
-      type: "action-used",
-      actorId: player.id,
-      actionId: action,
-      repeatCount: 0,
-    });
-
-  /*
-   * 钩子要求重复蓄能爆发时，
-   * 重复的爆发不再消耗蓄能，也不再次派发
-   * action-used事件，避免无限触发。
-   */
-  if (
-    action === "burst" &&
-    actionEvent.repeatCount > 0
-  ) {
-    for (
-      let repeatIndex = 0;
-      repeatIndex <
-      actionEvent.repeatCount;
-      repeatIndex += 1
-    ) {
-      executePlayerBurst(
-        state,
-        player,
-        true,
-      );
-    }
-  }
-
-  applyWeaponChargeRule(state, player, action);
-
-  player.actionsTaken += 1;
-
-  if (checkStandardVictory(state)) {
-    return state;
-  }
-
-  checkTeleportCondition(state);
-
-  return finishOneAction(state);
-}
-
-
-/**
- * 按照单位数据中的AI行动序列选择行动。
- */
 function chooseEnemyAction(
+  state: BattleState,
   enemy: BattleUnit,
 ): CombatActionDefinition | undefined {
-  const definition =
-    getCombatantDefinition(
-      enemy.role,
-    );
-
+  const definition = getCombatantDefinition(enemy.role);
   if (!definition) {
     return undefined;
   }
 
-  const ai = definition.ai;
+  const selection: ActionSelection = {
+    enemyId:
+      state.units.find(
+        (unit) =>
+          unit.role === "player" &&
+          unit.side !== enemy.side &&
+          unit.alive,
+      )?.id ?? null,
+    allyId: enemy.id,
+  };
 
+  const usable = (action: CombatActionDefinition) =>
+    getActionAvailability(
+      state,
+      enemy.id,
+      action.id,
+      selection,
+    ).allowed;
+
+  const ai = definition.ai;
   if (!ai) {
-    return definition.actions.find(
-      (action) =>
-        canUseDefinedAction(
-          enemy,
-          action,
-        ),
-    );
+    return definition.actions.find(usable);
   }
 
-  const isFullCharge =
-    enemy.charge >= enemy.maxCharge;
-
+  const full = enemy.charge >= enemy.maxCharge;
   const pattern =
-    isFullCharge &&
-    ai.fullChargePattern.length > 0
+    full && ai.fullChargePattern.length > 0
       ? ai.fullChargePattern
       : ai.normalPattern;
 
-  if (pattern.length === 0) {
-    return definition.actions.find(
-      (action) =>
-        canUseDefinedAction(
-          enemy,
-          action,
-        ),
+  const start = full
+    ? enemy.fullChargeActionsUsed
+    : enemy.actionsTaken;
+
+  for (let offset = 0; offset < pattern.length; offset += 1) {
+    const id = pattern[(start + offset) % pattern.length];
+    const action = definition.actions.find(
+      (candidate) => candidate.id === id,
     );
-  }
 
-  const startingIndex =
-    isFullCharge
-      ? enemy.fullChargeActionsUsed
-      : enemy.actionsTaken;
-
-  /*
-   * 如果预定行动当前不可用，
-   * 就继续检查序列中的下一个行动。
-   */
-  for (
-    let offset = 0;
-    offset < pattern.length;
-    offset += 1
-  ) {
-    const patternIndex =
-      (
-        startingIndex +
-        offset
-      ) % pattern.length;
-
-    const actionId =
-      pattern[patternIndex];
-
-    const action =
-      getCombatantAction(
-        enemy.role,
-        actionId,
-      );
-
-    if (
-      action &&
-      canUseDefinedAction(
-        enemy,
-        action,
-      )
-    ) {
+    if (action && usable(action)) {
       return action;
     }
   }
 
-  return definition.actions.find(
-    (action) =>
-      canUseDefinedAction(
-        enemy,
-        action,
-      ),
-  );
+  return definition.actions.find(usable);
 }
 
 export function performEnemyAction(
   originalState: BattleState,
 ): BattleState {
-  const state =
-    copyState(originalState);
+  const state = copyState(originalState);
 
   if (
     state.status !== "playing" ||
@@ -3859,31 +2779,25 @@ export function performEnemyAction(
     return state;
   }
 
-  const actor = getUnit(
-    state,
-    state.currentActorId,
-  );
+  const actor = getUnit(state, state.currentActorId);
 
   if (
     !actor ||
     !actor.alive ||
-    actor.side !== "enemy"
+    actor.side !== "enemy" ||
+    actor.apLeft <= 0
   ) {
     return state;
   }
 
-  const player =
-    getUnit(state, "player");
-
-  if (!player || !player.alive) {
+  const player = getUnit(state, "player");
+  if (!player?.alive) {
     return state;
   }
 
-  /*
-   * 这是教程场景本身的特殊胜利条件，
-   * 不属于魔将的普通战斗技能。
-   */
+  // 教程演出仍属于教程流程，不进入普通行动定义。
   if (
+    state.battleKind === "tutorial" &&
     actor.id === "enemy-mage" &&
     state.teleporting
   ) {
@@ -3895,106 +2809,30 @@ export function performEnemyAction(
     state.status = "won";
     state.currentActorId = null;
     state.actionSerial += 1;
-
     return state;
   }
 
-  const selectedAction =
-    chooseEnemyAction(actor);
+  const action = chooseEnemyAction(state, actor);
 
-  if (!selectedAction) {
+  if (!action) {
     addLog(
       state,
-      `行动错误：没有找到${actor.name}可以使用的行动。`,
+      `${actor.name}当前没有可用行动，本次行动跳过。`,
     );
 
     actor.actionsTaken += 1;
-
     return finishOneAction(state);
   }
 
-  console.log("[自动行动]", {
-    name: actor.name,
-    action: selectedAction.id,
-    apLeft: actor.apLeft,
-    nextActionAt:
-      actor.nextActionAt,
-    actionSerial:
-      state.actionSerial,
-  });
-
-  const beforeActionEvent =
-    emitBattleEvent(state, {
-      type: "before-action-used",
-      actorId: actor.id,
-
-      actionId:
-        selectedAction.id,
-
-      isChargedAction:
-        selectedAction.id ===
-          "charged-skill" ||
-        selectedAction.id ===
-          "burst",
-
-      canceled: false,
-    });
-
-  if (beforeActionEvent.canceled) {
-    addLog(
-      state,
-      `${actor.name}的${selectedAction.name}被取消。`,
-    );
-
-    actor.actionsTaken += 1;
-
-    return finishOneAction(state);
-  }
-
-  const actionSucceeded =
-    executeDefinedAction(
-      state,
-      actor,
-      selectedAction,
-      null,
-    );
-
-  if (!actionSucceeded) {
-    actor.actionsTaken += 1;
-
-    return finishOneAction(state);
-  }
-
-  emitBattleEvent(state, {
-    type: "action-used",
-    actorId: actor.id,
-    actionId:
-      selectedAction.id,
-    repeatCount: 0,
-  });
-
-  actor.actionsTaken += 1;
-
-  if (
-    player.hp <= 0 ||
-    !player.alive
-  ) {
-    player.hp = 0;
-    player.alive = false;
-
-    state.status = "lost";
-    state.currentActorId = null;
-    state.actionSerial += 1;
-
-    addLog(
-      state,
-      `${player.name}失去战斗能力。`,
-    );
-
-    return state;
-  }
-
-  return finishOneAction(state);
+  return performUnitAction(
+    state,
+    actor,
+    action.id,
+    {
+      enemyId: player.id,
+      allyId: actor.id,
+    },
+  );
 }
 
 export function getCurrentActor(
@@ -4005,119 +2843,6 @@ export function getCurrentActor(
   }
 
   return getUnit(state, state.currentActorId);
-}
-
-function getPureWhiteRandomAilment(
-  state: BattleState,
-  target: BattleUnit,
-  source: BattleUnit,
-): void {
-  const candidates = [
-    ["burning", 0.5],
-    ["poison", 5],
-    ["bleeding", 2],
-    ["frozen", 0],
-    ["paralysis", 1],
-  ] as const;
-  const missing = candidates.filter(
-    ([definitionId]) => !hasStatus(target, definitionId),
-  );
-  const pool = missing.length > 0 ? missing : candidates;
-  const [definitionId, value] = pool[
-    Math.floor(Math.random() * pool.length)
-  ];
-
-  if (definitionId === "burning") {
-    addBuiltInStatus(state, target.id, "burning", {
-      value: getEffectiveBattleStat(source, "attack") * value,
-      duration: 1,
-    });
-  } else if (definitionId === "poison") {
-    addBuiltInStatus(state, target.id, "poison", { value, duration: 1 });
-  } else if (definitionId === "bleeding") {
-    addBuiltInStatus(state, target.id, "bleeding", { value, duration: 1 });
-  } else {
-    addBuiltInStatus(state, target.id, definitionId, { duration: 1 });
-  }
-}
-
-function performPureWhiteWeaponAction(
-  state: BattleState,
-  player: BattleUnit,
-  action: PlayerActionId,
-  targetId: string | null,
-): BattleState {
-  const target = targetId ? getUnit(state, targetId) : undefined;
-
-  if (action === "basic" && target?.alive) {
-    addBlueStatus(state, player.id, "star-enchantment", "星附魔", "星", "每次攻击随机附加一种以下异常1回合：燃烧（攻击力0.5倍），中毒5，流血2，麻痹，冻结。", { duration: 2, tags: ["特殊"] });
-    for (let hit = 0; hit < 2; hit += 1) {
-      const result = dealDamage(state, player.id, target.id, 0.5, "physical");
-      if (target.alive) {
-        getPureWhiteRandomAilment(state, target, player);
-      }
-      addLog(state, `${player.name}使用风暴之星造成${result.damage}点物理伤害。`);
-    }
-  }
-
-  if (action === "skill" && target?.alive) {
-    addBlueStatus(state, target.id, "damage-taken-increase", "受伤增加", "伤", "受到的伤害增加35%。", { duration: 2, tags: ["弱化"], stacking: "independent" });
-    getPureWhiteRandomAilment(state, target, player);
-  }
-
-  if (action === "charged-skill") {
-    for (const enemy of state.units.filter((unit) => unit.side === "enemy" && unit.alive)) {
-      addBuiltInStatus(state, enemy.id, "taunt", { duration: 2 });
-    }
-    addBuiltInStatus(state, player.id, "protector", { duration: 2 });
-    const ally = state.units.find((unit) => unit.side === "player" && unit.id !== player.id && unit.alive);
-    if (ally) {
-      addBuiltInStatus(state, ally.id, "damage-nullification", { duration: 2, stacks: 4 });
-    }
-  }
-
-  if (action === "burst" && target?.alive) {
-    for (const enemy of state.units.filter((unit) => unit.side === "enemy" && unit.alive)) {
-      const multiplier = enemy.id === target.id ? 3 : 1;
-      dealDamage(state, player.id, enemy.id, multiplier, "physical");
-      const types = new Set(
-        enemy.statuses
-          .filter((status) => getStatusTags(status).some((tag) => tag === "异常" || tag === "DoT"))
-          .map((status) => status.definitionId),
-      );
-      for (const _type of types) {
-        dealFixedDamage(state, player.id, enemy.id, getEffectiveBattleStat(player, "attack") * 0.5, "异常追加伤害");
-      }
-    }
-  }
-
-  emitBattleEvent(state, { type: "action-used", actorId: player.id, actionId: action, repeatCount: 0 });
-  applyWeaponChargeRule(state, player, action);
-  player.actionsTaken += 1;
-  return finishOneAction(state);
-}
-
-/** 武器行动的基础蓄能规则。武器效果不应各自重复实现这部分规则。 */
-function applyWeaponChargeRule(
-  state: BattleState,
-  unit: BattleUnit,
-  action: PlayerActionId,
-): void {
-  if (action === "basic") {
-    if (!basicChargeIsLocked(unit)) {
-      gainCharge(state, unit, 1);
-    }
-    return;
-  }
-
-  if (action === "charged-skill") {
-    unit.charge = Math.max(0, unit.charge - 1);
-    return;
-  }
-
-  if (action === "burst") {
-    unit.charge = 0;
-  }
 }
 
 /** 预留给其他单位施加的蓄能减少；武器自带扣费不会经过这里。 */

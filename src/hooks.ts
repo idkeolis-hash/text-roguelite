@@ -49,7 +49,12 @@ export interface BeforeActionUsedEvent {
   type: "before-action-used";
 
   actorId: string;
+
+  /** 兼容现有钩子：这里仍表示行动类别。 */
   actionId: PlayerActionId;
+
+  /** 新系统中具体行动的稳定识别码。 */
+  actionDefinitionId?: string;
 
   /**
    * 是否属于蓄能技能或蓄能爆发。
@@ -66,7 +71,12 @@ export interface BeforeActionUsedEvent {
 export interface ActionUsedEvent {
   type: "action-used";
   actorId: string;
+
+  /** 兼容现有钩子：这里仍表示行动类别。 */
   actionId: PlayerActionId;
+
+  /** 新系统中具体行动的稳定识别码。 */
+  actionDefinitionId?: string;
 
   /**
    * 钩子可以要求当前行动额外重复。

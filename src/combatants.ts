@@ -2,98 +2,18 @@ import type {
   CharacterStats,
 } from "./content";
 
-export type CombatDamageType =
-  | "physical"
-  | "energy";
+import {
+  defineAction,
+  type CombatActionDefinition,
+  type CombatActionSource,
+} from "./actionTypes";
 
-/**
- * 一个效果应该作用于谁。
- */
-export type CombatTargetSelector =
-  | {
-      type: "self";
-    }
-  | {
-      /**
-       * 玩家操作同伴时选中的敌人。
-       */
-      type: "chosen-enemy";
-    }
-  | {
-      /**
-       * 教程以及普通敌人默认攻击主控。
-       */
-      type: "main-player";
-    }
-  | {
-      type: "all-enemies";
-    }
-  | {
-      type: "all-allies";
-    }
-  | {
-      /**
-       * 寻找指定类型的存活友军。
-       * 如果没找到，就以自己为目标。
-       */
-      type: "ally-role-or-self";
-      roleId: string;
-    };
-
-/**
- * 所有角色行动都由这些通用效果组合而成。
- *
- * 以后如果出现吸血、加速、召唤等机制，
- * 应该在这里增加新的通用效果类型，
- * 而不是为某个角色单独写执行函数。
- */
-export type CombatActionEffect =
-  | {
-      type: "damage";
-      target: CombatTargetSelector;
-      multiplier: number;
-      damageType: CombatDamageType;
-
-      /**
-       * 不填时攻击1次。
-       */
-      hits?: number;
-    }
-  | {
-      type: "gain-charge";
-      target: CombatTargetSelector;
-      amount: number;
-    }
-  | {
-      type: "guard";
-      target: CombatTargetSelector;
-    };
-
-export interface CombatActionDefinition {
-  id: string;
-  name: string;
-  description: string;
-
-  /**
-   * 是否需要玩家选择一名敌人。
-   */
-  targetRequired?: boolean;
-
-  /**
-   * 是否必须满蓄才能使用。
-   */
-  requiresFullCharge?: boolean;
-
-  /**
-   * 行动完成后的蓄能消耗。
-   *
-   * 数字：扣除相应蓄能。
-   * "all"：蓄能归零。
-   */
-  chargeCost?: number | "all";
-
-  effects: CombatActionEffect[];
-}
+export type {
+  CombatActionDefinition,
+  CombatActionEffect,
+  CombatDamageType,
+  CombatTargetSelector,
+} from "./actionTypes";
 
 export interface CombatantAiDefinition {
   /**
@@ -129,8 +49,12 @@ export interface CombatantDefinition {
   ai?: CombatantAiDefinition;
 }
 
-export const COMBATANT_DEFINITIONS:
-  CombatantDefinition[] = [
+type CombatantSource =
+  Omit<CombatantDefinition, "actions"> & {
+    actions: CombatActionSource[];
+  };
+
+const COMBATANT_SOURCES: CombatantSource[] = [
     /* =====================================================
        同伴：猫
        ===================================================== */
@@ -159,7 +83,7 @@ export const COMBATANT_DEFINITIONS:
 
       actions: [
         {
-          id: "basic",
+           category: "basic",
           name: "喵",
           description:
             "无效果，蓄能+1。",
@@ -176,7 +100,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "skill",
+           category: "skill",
           name: "喵喵",
           description:
             "无效果。",
@@ -185,7 +109,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "charge",
+           category: "charge",
           name: "蓄能",
           description:
             "蓄能+2。",
@@ -202,7 +126,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "charged-skill",
+           category: "charged-skill",
           name: "喵喵喵",
           description:
             "满蓄时可用。无效果，蓄能-1。",
@@ -214,7 +138,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "burst",
+           category: "burst",
           name: "喵喵喵喵",
           description:
             "满蓄时可用。无效果，蓄能归零。",
@@ -268,7 +192,7 @@ export const COMBATANT_DEFINITIONS:
 
       actions: [
         {
-          id: "basic",
+           category: "basic",
           name: "魔力弹",
           description:
             "对主控造成能量伤害，并使自身蓄能+1。",
@@ -293,7 +217,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "skill",
+           category: "skill",
           name: "暗蚀术",
           description:
             "对主控造成较高的能量伤害。",
@@ -311,7 +235,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "charge",
+           category: "charge",
           name: "魔力汇聚",
           description:
             "停止攻击并汇聚魔力，使自身蓄能+2。",
@@ -328,7 +252,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "charged-skill",
+           category: "charged-skill",
           name: "穿魂射线",
           description:
             "满蓄时可用。造成大量能量伤害，使用后蓄能-1。",
@@ -349,7 +273,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "burst",
+           category: "burst",
           name: "黑夜坠落",
           description:
             "满蓄时可用。造成极高的能量伤害，使用后蓄能归零。",
@@ -412,7 +336,7 @@ export const COMBATANT_DEFINITIONS:
 
       actions: [
         {
-          id: "basic",
+           category: "basic",
           name: "盾矛突刺",
           description:
             "对主控造成物理伤害，并使自身蓄能+1。",
@@ -437,7 +361,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "skill",
+           category: "skill",
           name: "举盾掩护",
           description:
             "使魔将获得防御状态；如果魔将已经无法战斗，则保护自己。",
@@ -454,7 +378,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "charge",
+           category: "charge",
           name: "稳固阵势",
           description:
             "稳住阵脚，使自身蓄能+2。",
@@ -471,7 +395,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "charged-skill",
+           category: "charged-skill",
           name: "壁垒冲锋",
           description:
             "满蓄时可用。攻击主控并使自己获得防御状态，使用后蓄能-1。",
@@ -498,7 +422,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "burst",
+           category: "burst",
           name: "不破军阵",
           description:
             "满蓄时可用。使所有存活敌人获得防御状态，使用后蓄能归零。",
@@ -559,7 +483,7 @@ export const COMBATANT_DEFINITIONS:
 
       actions: [
         {
-          id: "basic",
+           category: "basic",
           name: "横斩",
           description:
             "对主控造成物理伤害，并使自身蓄能+1。",
@@ -584,7 +508,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "skill",
+           category: "skill",
           name: "追命斩",
           description:
             "对主控造成较高的物理伤害。",
@@ -602,7 +526,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "charge",
+           category: "charge",
           name: "磨刃",
           description:
             "暂时停止攻击，使自身蓄能+2。",
@@ -619,7 +543,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "charged-skill",
+           category: "charged-skill",
           name: "断首",
           description:
             "满蓄时可用。对主控造成大量物理伤害，使用后蓄能-1。",
@@ -640,7 +564,7 @@ export const COMBATANT_DEFINITIONS:
         },
 
         {
-          id: "burst",
+           category: "burst",
           name: "死亡轮舞",
           description:
             "满蓄时可用。连续攻击主控3次，使用后蓄能归零。",
@@ -664,6 +588,24 @@ export const COMBATANT_DEFINITIONS:
     },
   ];
 
+export const COMBATANT_DEFINITIONS: CombatantDefinition[] =
+  COMBATANT_SOURCES.map((source) => ({
+    ...source,
+    actions: source.actions.map((action) =>
+      defineAction(source.id, action),
+    ),
+    ai: source.ai
+      ? {
+          normalPattern: source.ai.normalPattern.map(
+            (category) => `${source.id}:${category}`,
+          ),
+          fullChargePattern: source.ai.fullChargePattern.map(
+            (category) => `${source.id}:${category}`,
+          ),
+        }
+      : undefined,
+  }));
+
 export function getCombatantDefinition(
   roleId: string,
 ): CombatantDefinition | undefined {
@@ -681,6 +623,7 @@ export function getCombatantAction(
     roleId,
   )?.actions.find(
     (action) =>
-      action.id === actionId,
+      action.id === actionId ||
+      action.category === actionId,
   );
 }

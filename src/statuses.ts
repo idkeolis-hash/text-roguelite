@@ -826,20 +826,6 @@ export function addStatus(
     state.logs.push(`${target.name}的附风转化为燃烧。`);
   }
 
-  if (
-    input.definitionId === "burning" &&
-    hasStatus(target, "erosion-fire")
-  ) {
-    const erosion = getStatusByDefinition(target, "erosion-fire");
-    if (erosion) {
-      erosion.stacks += 1;
-      erosion.percentModifiers.attack =
-        -Math.min(0.5, erosion.stacks * 0.05);
-      erosion.description =
-        `攻击力降低${Math.min(50, erosion.stacks * 5)}%，回合开始时有${Math.min(100, erosion.stacks * 20)}%概率附加禁疗1回合。`;
-    }
-  }
-
   /*
    * 蚀刻阻止除蚀刻本身以外的所有状态。
    */
@@ -930,6 +916,20 @@ export function addStatus(
     );
 
     return undefined;
+  }
+
+  if (
+    input.definitionId === "burning" &&
+    hasStatus(target, "erosion-fire")
+  ) {
+    const erosion = getStatusByDefinition(target, "erosion-fire");
+    if (erosion) {
+      erosion.stacks += 1;
+      erosion.percentModifiers.attack =
+        -Math.min(0.5, erosion.stacks * 0.05);
+      erosion.description =
+        `攻击力降低${Math.min(50, erosion.stacks * 5)}%，回合开始时有${Math.min(100, erosion.stacks * 20)}%概率附加禁疗1回合。`;
+    }
   }
 
   /*
