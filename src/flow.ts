@@ -142,45 +142,35 @@ export interface FlowReward {
   kind: FlowRewardKind;
   id: string;
   name: string;
-  cursed?: boolean;
 }
 
 export function createReward(
   kind: FlowRewardKind,
-  cursed = false,
 ): FlowReward {
-  if (kind === "relic") {
-    return {
-      kind,
+  const rewards: Record<FlowRewardKind, FlowReward> = {
+    relic: {
+      kind: "relic",
       id: "relic-placeholder",
-      name: cursed
-        ? "被诅咒的占位符遗物"
-        : "占位符遗物",
-      cursed,
-    };
-  }
-
-  if (kind === "item") {
-    return {
-      kind,
+      name: "占位符遗物",
+    },
+    item: {
+      kind: "item",
       id: "item-test-medicine",
       name: "测试回复药",
-    };
-  }
-
-  if (kind === "weapon") {
-    return {
-      kind,
+    },
+    weapon: {
+      kind: "weapon",
       id: "weapon-placeholder",
       name: "占位符武器",
-    };
-  }
-
-  return {
-    kind,
-    id: "companion-cat",
-    name: "猫",
+    },
+    companion: {
+      kind: "companion",
+      id: "companion-cat",
+      name: "猫",
+    },
   };
+
+  return { ...rewards[kind] };
 }
 
 /**
@@ -487,7 +477,7 @@ export type WheelOutcome =
 export function rollWheelOutcome():
   WheelOutcome {
   const roll = Math.floor(
-    Math.random() * 7,
+    Math.random() * 6,
   );
 
   if (roll === 0) {
@@ -539,7 +529,6 @@ export function rollWheelOutcome():
     reward:
       createReward(
         "relic",
-        true,
       ),
   };
 }
